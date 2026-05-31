@@ -5,8 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI-Entra-Assistant | MSAL Demo</title>
 
-  <!-- Microsoft Authentication Library -->
+  <!-- Microsoft Authentication Library with fallback CDN -->
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script>
+    if (typeof msal === "undefined") {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"><\/script>');
+    }
+  </script>
+  <script>
+    if (typeof msal === "undefined") {
+      document.write('<script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"><\/script>');
+    }
+  </script>
 
   <style>
     :root {
@@ -195,6 +205,9 @@ redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"</pre>
     <p class="small warning">
       Do not store client secrets or Azure OpenAI keys in GitHub Pages. Client ID and Tenant ID are okay for browser apps.
     </p>
+    <p class="small">
+      This version loads MSAL from Microsoft CDN first, then falls back to jsDelivr and unpkg if the first CDN is blocked.
+    </p>
   </div>
 
   <div class="card">
@@ -366,7 +379,7 @@ Optional:
   function initMsal() {
     try {
       if (typeof msal === "undefined") {
-        throw new Error("MSAL library did not load. Check internet access or CDN blocking.");
+        throw new Error("MSAL library did not load from Microsoft CDN, jsDelivr, or unpkg. Check browser console, network tab, firewall, ad blocker, or CSP settings.");
       }
 
       msalInstance = new msal.PublicClientApplication(msalConfig);
