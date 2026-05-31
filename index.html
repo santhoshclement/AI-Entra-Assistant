@@ -3,18 +3,13 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI-Entra-Assistant | MSAL Demo</title>
+  <title>AI-Entra-Assistant | Free Gemini AI Demo</title>
 
-  <!-- Microsoft Authentication Library with fallback CDN -->
+  <!-- Microsoft Authentication Library -->
   <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
   <script>
     if (typeof msal === "undefined") {
       document.write('<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"><\/script>');
-    }
-  </script>
-  <script>
-    if (typeof msal === "undefined") {
-      document.write('<script src="https://unpkg.com/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"><\/script>');
     }
   </script>
 
@@ -99,20 +94,28 @@
       color: #111827;
     }
 
+    button.ai {
+      background: #a78bfa;
+      color: #111827;
+    }
+
     button:disabled {
       opacity: 0.45;
       cursor: not-allowed;
     }
 
-    textarea {
+    input, textarea {
       width: 100%;
-      height: 95px;
       border-radius: 12px;
       border: 1px solid var(--border);
       padding: 14px;
       font-size: 15px;
       background: #020617;
       color: var(--text);
+    }
+
+    textarea {
+      height: 95px;
       resize: vertical;
     }
 
@@ -187,26 +190,28 @@
 <body>
 <header>
   <h1>AI-Entra-Assistant</h1>
-  <p>MSAL + Microsoft Graph Demo for Microsoft Entra ID</p>
+  <p>Free Phase 1: MSAL + Microsoft Graph + Gemini AI</p>
   <p><span id="loginStatus" class="status warn">Initializing MSAL...</span></p>
 </header>
 
 <div class="container">
 
   <div class="card">
-    <h2>1. App Configuration</h2>
-    <p class="small">Current configuration used by this GitHub Pages demo.</p>
+    <h2>1. Configuration</h2>
+    <p class="small">Microsoft Entra App Registration is already configured below. Add your Gemini API key to enable real AI.</p>
 
     <pre>
 clientId: "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def"
 tenantId: "1a9cfd22-fcc1-4a7c-80f0-5da5561da0e5"
 redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"</pre>
 
+    <label class="small">Gemini API Key</label>
+    <input id="geminiApiKey" type="password" placeholder="Paste Gemini API key here for browser demo" />
+    <button class="secondary" onclick="saveGeminiKey()">Save Gemini Key in Browser</button>
+    <button class="danger" onclick="clearGeminiKey()">Clear Gemini Key</button>
+
     <p class="small warning">
-      Do not store client secrets or Azure OpenAI keys in GitHub Pages. Client ID and Tenant ID are okay for browser apps.
-    </p>
-    <p class="small">
-      This version loads MSAL from Microsoft CDN first, then falls back to jsDelivr and unpkg if the first CDN is blocked.
+      Free demo note: this stores the key only in your browser localStorage. For production, use a backend proxy. Restrict the API key to Gemini API only.
     </p>
   </div>
 
@@ -243,21 +248,21 @@ redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"</pre>
   </div>
 
   <div class="card">
-    <h2>3. AI Assistant Demo</h2>
+    <h2>3. Real AI Assistant</h2>
     <p class="small">
-      This section uses simple browser logic to summarize Graph data. Later you can connect Azure OpenAI through Azure Functions.
+      This section sends your loaded Graph summary to Gemini and generates real AI identity security recommendations.
     </p>
 
     <div class="chips">
-      <span onclick="setPrompt('Summarize tenant identity posture')">Tenant Summary</span>
-      <span onclick="setPrompt('Review privileged roles')">Privileged Roles</span>
-      <span onclick="setPrompt('Show identity governance recommendations')">Governance Recommendations</span>
-      <span onclick="setPrompt('Find possible risks')">Security Risks</span>
+      <span onclick="setPrompt('Analyze my Microsoft Entra tenant security posture')">Tenant Security Posture</span>
+      <span onclick="setPrompt('Review privileged roles and identity governance risks')">Privileged Role Review</span>
+      <span onclick="setPrompt('Generate executive identity security report')">Executive Report</span>
+      <span onclick="setPrompt('Give IAM improvement recommendations')">IAM Recommendations</span>
     </div>
 
-    <textarea id="aiPrompt" placeholder="Example: Review privileged roles"></textarea>
-    <button onclick="askAssistant()">Ask Assistant</button>
-    <pre id="aiOutput">AI-style response will appear here.</pre>
+    <textarea id="aiPrompt" placeholder="Example: Analyze my Microsoft Entra tenant security posture"></textarea>
+    <button class="ai" onclick="generateGeminiInsights()">Analyze with Gemini AI</button>
+    <pre id="aiOutput">Real Gemini AI response will appear here.</pre>
   </div>
 
   <div class="card">
@@ -283,7 +288,7 @@ Optional:
 
 <script>
   /***********************************************************
-   * App Registration Details
+   * Microsoft Entra App Registration Details
    ***********************************************************/
   var tenantId = "1a9cfd22-fcc1-4a7c-80f0-5da5561da0e5";
   var clientId = "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def";
@@ -316,15 +321,11 @@ Optional:
   var latestUsers = [];
   var latestGroups = [];
   var latestRoles = [];
+  var latestTenantInfo = null;
 
   function formatError(error) {
-    if (!error) {
-      return "Unknown error";
-    }
-
-    if (typeof error === "string") {
-      return error;
-    }
+    if (!error) return "Unknown error";
+    if (typeof error === "string") return error;
 
     return JSON.stringify({
       name: error.name,
@@ -337,6 +338,25 @@ Optional:
       statusCode: error.statusCode,
       raw: error
     }, null, 2);
+  }
+
+  function saveGeminiKey() {
+    var key = document.getElementById("geminiApiKey").value.trim();
+
+    if (!key) {
+      alert("Please paste your Gemini API key first.");
+      return;
+    }
+
+    localStorage.setItem("GEMINI_API_KEY", key);
+    document.getElementById("geminiApiKey").value = "";
+    alert("Gemini API key saved in this browser.");
+  }
+
+  function clearGeminiKey() {
+    localStorage.removeItem("GEMINI_API_KEY");
+    document.getElementById("geminiApiKey").value = "";
+    alert("Gemini API key cleared from this browser.");
   }
 
   function setButtonsEnabled(enabled) {
@@ -352,9 +372,7 @@ Optional:
 
     ids.forEach(function(id) {
       var btn = document.getElementById(id);
-      if (btn) {
-        btn.disabled = !enabled;
-      }
+      if (btn) btn.disabled = !enabled;
     });
   }
 
@@ -379,7 +397,7 @@ Optional:
   function initMsal() {
     try {
       if (typeof msal === "undefined") {
-        throw new Error("MSAL library did not load from Microsoft CDN, jsDelivr, or unpkg. Check browser console, network tab, firewall, ad blocker, or CSP settings.");
+        throw new Error("MSAL library did not load. Check CDN access.");
       }
 
       msalInstance = new msal.PublicClientApplication(msalConfig);
@@ -413,16 +431,10 @@ Optional:
 
   async function signIn() {
     try {
-      if (!msalInstance) {
-        initMsal();
-      }
-
-      if (!msalInstance) {
-        throw new Error("MSAL is not initialized.");
-      }
+      if (!msalInstance) initMsal();
+      if (!msalInstance) throw new Error("MSAL is not initialized.");
 
       var response = await msalInstance.loginPopup(loginRequest);
-
       signedInAccount = response.account;
       msalInstance.setActiveAccount(response.account);
       updateStatus("signedIn");
@@ -437,9 +449,7 @@ Optional:
 
   async function signOut() {
     try {
-      if (!msalInstance) {
-        throw new Error("MSAL is not initialized.");
-      }
+      if (!msalInstance) throw new Error("MSAL is not initialized.");
 
       var account = msalInstance.getActiveAccount();
 
@@ -451,13 +461,14 @@ Optional:
       latestUsers = [];
       latestGroups = [];
       latestRoles = [];
+      latestTenantInfo = null;
       updateStatus("ready");
 
       document.getElementById("profileOutput").textContent = "Signed out.";
       document.getElementById("usersOutput").textContent = "Users will appear here.";
       document.getElementById("groupsOutput").textContent = "Groups will appear here.";
       document.getElementById("rolesOutput").textContent = "Roles will appear here.";
-      document.getElementById("aiOutput").textContent = "AI-style response will appear here.";
+      document.getElementById("aiOutput").textContent = "Real Gemini AI response will appear here.";
     } catch (error) {
       document.getElementById("profileOutput").textContent =
         "Sign out failed:\n" + formatError(error);
@@ -465,19 +476,13 @@ Optional:
   }
 
   async function getAccessToken() {
-    if (!msalInstance) {
-      initMsal();
-    }
-
-    if (!msalInstance) {
-      throw new Error("MSAL is not initialized.");
-    }
+    if (!msalInstance) initMsal();
+    if (!msalInstance) throw new Error("MSAL is not initialized.");
 
     var account = msalInstance.getActiveAccount();
 
     if (!account) {
       var accounts = msalInstance.getAllAccounts();
-
       if (accounts.length > 0) {
         account = accounts[0];
         msalInstance.setActiveAccount(account);
@@ -515,9 +520,7 @@ Optional:
 
     var data = await response.json();
 
-    if (!response.ok) {
-      throw data;
-    }
+    if (!response.ok) throw data;
 
     return data;
   }
@@ -538,6 +541,8 @@ Optional:
     try {
       var data = await callGraph("https://graph.microsoft.com/v1.0/organization");
 
+      latestTenantInfo = data.value ? data.value[0] : data;
+
       document.getElementById("profileOutput").textContent =
         JSON.stringify(data, null, 2);
     } catch (error) {
@@ -549,7 +554,7 @@ Optional:
   async function getUsers() {
     try {
       var data = await callGraph(
-        "https://graph.microsoft.com/v1.0/users?$select=displayName,userPrincipalName,accountEnabled,userType&$top=10"
+        "https://graph.microsoft.com/v1.0/users?$select=displayName,userPrincipalName,accountEnabled,userType&$top=25"
       );
 
       latestUsers = data.value || [];
@@ -565,7 +570,7 @@ Optional:
   async function getGroups() {
     try {
       var data = await callGraph(
-        "https://graph.microsoft.com/v1.0/groups?$select=displayName,mail,securityEnabled,groupTypes&$top=10"
+        "https://graph.microsoft.com/v1.0/groups?$select=displayName,mail,securityEnabled,groupTypes&$top=25"
       );
 
       latestGroups = data.value || [];
@@ -594,80 +599,158 @@ Optional:
     }
   }
 
-  function askAssistant() {
-    var prompt = document.getElementById("aiPrompt").value.toLowerCase();
-    var userCount = latestUsers.length;
-    var groupCount = latestGroups.length;
-    var roleCount = latestRoles.length;
+  function buildTenantSummary() {
+    var guestUsers = latestUsers.filter(function(user) {
+      return user.userType === "Guest";
+    });
 
-    var response = "";
+    var disabledUsers = latestUsers.filter(function(user) {
+      return user.accountEnabled === false;
+    });
 
-    if (prompt.includes("role") || prompt.includes("privileged")) {
-      response =
-`AI Identity Review: Privileged Roles
+    return {
+      tenant: latestTenantInfo ? {
+        displayName: latestTenantInfo.displayName,
+        tenantType: latestTenantInfo.tenantType,
+        countryLetterCode: latestTenantInfo.countryLetterCode,
+        verifiedDomains: latestTenantInfo.verifiedDomains
+      } : "Tenant info not loaded",
+      userSummary: {
+        loadedUsers: latestUsers.length,
+        guestUsersLoaded: guestUsers.length,
+        disabledUsersLoaded: disabledUsers.length
+      },
+      groupSummary: {
+        loadedGroups: latestGroups.length,
+        securityEnabledGroupsLoaded: latestGroups.filter(function(g) { return g.securityEnabled; }).length
+      },
+      roleSummary: {
+        loadedDirectoryRoles: latestRoles.length,
+        roles: latestRoles.map(function(role) {
+          return {
+            displayName: role.displayName,
+            description: role.description
+          };
+        })
+      },
+      sampleUsers: latestUsers.map(function(user) {
+        return {
+          displayName: user.displayName,
+          userPrincipalName: user.userPrincipalName,
+          accountEnabled: user.accountEnabled,
+          userType: user.userType
+        };
+      }),
+      sampleGroups: latestGroups.map(function(group) {
+        return {
+          displayName: group.displayName,
+          mail: group.mail,
+          securityEnabled: group.securityEnabled,
+          groupTypes: group.groupTypes
+        };
+      })
+    };
+  }
 
-Directory roles loaded: ${roleCount}
+  async function generateGeminiInsights() {
+    var apiKey = localStorage.getItem("GEMINI_API_KEY");
+    var userPrompt = document.getElementById("aiPrompt").value.trim();
 
-Observations:
-- Review privileged roles regularly.
-- Avoid permanent admin assignments where possible.
-- Use Microsoft Entra Privileged Identity Management for just-in-time access.
-- Validate emergency access accounts separately.
-
-Next Action:
-Review Global Administrator, Privileged Role Administrator, Security Administrator, and Conditional Access Administrator assignments.`;
+    if (!apiKey) {
+      document.getElementById("aiOutput").textContent =
+        "Gemini API key is missing. Paste your key in the Configuration section and click Save Gemini Key.";
+      return;
     }
 
-    else if (prompt.includes("risk") || prompt.includes("security")) {
-      response =
-`AI Security Summary
-
-Current Loaded Data:
-- Users loaded: ${userCount}
-- Groups loaded: ${groupCount}
-- Directory roles loaded: ${roleCount}
-
-Recommended Checks:
-1. Confirm MFA is enforced for all users.
-2. Review privileged roles.
-3. Review guest users and external access.
-4. Remove stale accounts.
-5. Monitor sign-in risk and audit logs.`;
+    if (!userPrompt) {
+      userPrompt = "Analyze my Microsoft Entra tenant security posture.";
     }
 
-    else if (prompt.includes("governance") || prompt.includes("recommendation")) {
-      response =
-`AI Governance Recommendations
+    var tenantSummary = buildTenantSummary();
 
-Recommended Controls:
-- Enable Conditional Access for admins.
-- Use PIM for privileged roles.
-- Run monthly guest user access reviews.
-- Monitor inactive users.
-- Review group ownership.
-- Track license usage and reclaim unused licenses.`;
+    var fullPrompt =
+`You are a senior Microsoft Entra ID, IAM, and cloud security architect.
+
+Analyze the following Microsoft Graph tenant data from a portfolio demo.
+
+User request:
+${userPrompt}
+
+Tenant data:
+${JSON.stringify(tenantSummary, null, 2)}
+
+Return a clean report with:
+1. Executive summary
+2. Identity security score out of 100
+3. Key risks
+4. Governance gaps
+5. Practical recommendations
+6. Resume-friendly project summary
+
+Important:
+- Be clear that this is based only on the loaded sample Graph data.
+- Do not invent facts that are not present in the data.
+- Keep the response professional and suitable for an IAM portfolio project.`;
+
+    document.getElementById("aiOutput").textContent = "Calling Gemini AI...";
+
+    try {
+      var response = await fetch(
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + encodeURIComponent(apiKey),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: fullPrompt
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.3,
+              maxOutputTokens: 1200
+            }
+          })
+        }
+      );
+
+      var data = await response.json();
+
+      if (!response.ok) {
+        throw data;
+      }
+
+      var aiText =
+        data &&
+        data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts &&
+        data.candidates[0].content.parts[0] &&
+        data.candidates[0].content.parts[0].text;
+
+      document.getElementById("aiOutput").textContent =
+        aiText || JSON.stringify(data, null, 2);
+    } catch (error) {
+      document.getElementById("aiOutput").textContent =
+        "Gemini AI call failed:\n" + formatError(error);
     }
-
-    else {
-      response =
-`AI Tenant Summary
-
-Loaded Graph Data:
-- Users: ${userCount}
-- Groups: ${groupCount}
-- Directory roles: ${roleCount}
-
-Summary:
-This demo connects to Microsoft Entra ID using MSAL and Microsoft Graph API.`;
-    }
-
-    document.getElementById("aiOutput").textContent = response;
   }
 
   window.addEventListener("load", function() {
     setButtonsEnabled(false);
     updateStatus("initializing");
     initMsal();
+
+    if (localStorage.getItem("GEMINI_API_KEY")) {
+      document.getElementById("geminiApiKey").placeholder = "Gemini key already saved in this browser";
+    }
   });
 </script>
 
