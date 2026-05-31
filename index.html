@@ -186,8 +186,7 @@
   <div class="card">
     <h2>1. App Configuration</h2>
     <p class="small">
-      Replace the values below in the JavaScript section:
-      <strong>clientId</strong>, <strong>tenantId</strong>, and <strong>redirectUri</strong>.
+      Current configuration used by this GitHub Pages demo.
     </p>
 
     <pre>
@@ -205,6 +204,7 @@ redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"</pre>
     <button onclick="signIn()">Sign in with Microsoft</button>
     <button class="danger" onclick="signOut()">Sign out</button>
     <button class="secondary" onclick="getProfile()">Get My Profile</button>
+    <button class="secondary" onclick="getTenantInfo()">Get Tenant Info</button>
     <pre id="profileOutput">Profile output will appear here.</pre>
   </div>
 
@@ -225,7 +225,7 @@ redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"</pre>
 
     <div class="card">
       <h2>Directory Roles</h2>
-      <p class="small">Requires RoleManagement.Read.Directory.</p>
+      <p class="small">Requires RoleManagement.Read.Directory or Directory.Read.All.</p>
       <button onclick="getDirectoryRoles()">Get Roles</button>
       <pre id="rolesOutput">Roles will appear here.</pre>
     </div>
@@ -272,8 +272,7 @@ Optional:
 
 <script>
   /***********************************************************
-   * IMPORTANT:
-   * Replace these values with your App Registration details.
+   * App Registration Details
    ***********************************************************/
   const tenantId = "1a9cfd22-fcc1-4a7c-80f0-5da5561da0e5";
   const clientId = "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def";
@@ -283,7 +282,7 @@ Optional:
       clientId: clientId,
       authority: `https://login.microsoftonline.com/${tenantId}`,
       redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"
-      // For local testing, use:
+      // For local testing, change to:
       // redirectUri: "http://localhost:5500/"
     },
     cache: {
@@ -327,6 +326,8 @@ Optional:
 
   async function signIn() {
     try {
+      await msalInstance.initialize();
+
       const response = await msalInstance.loginPopup(loginRequest);
       signedInAccount = response.account;
       msalInstance.setActiveAccount(response.account);
@@ -366,6 +367,8 @@ Optional:
   }
 
   async function getAccessToken() {
+    await msalInstance.initialize();
+
     let account = msalInstance.getActiveAccount();
 
     if (!account) {
@@ -422,6 +425,17 @@ Optional:
     }
   }
 
+  async function getTenantInfo() {
+    try {
+      const data = await callGraph("https://graph.microsoft.com/v1.0/organization");
+      document.getElementById("profileOutput").textContent =
+        JSON.stringify(data, null, 2);
+    } catch (error) {
+      document.getElementById("profileOutput").textContent =
+        "Tenant info call failed:\n" + JSON.stringify(error, null, 2);
+    }
+  }
+
   async function getUsers() {
     try {
       const data = await callGraph(
@@ -457,7 +471,7 @@ Optional:
   async function getDirectoryRoles() {
     try {
       const data = await callGraph(
-        "https://graph.microsoft.com/v1.0/roleManagement/directory/roleAssignments?$top=10"
+        "https://graph.microsoft.com/v1.0/directoryRoles"
       );
 
       latestRoles = data.value || [];
@@ -474,7 +488,7 @@ Optional:
     const prompt = document.getElementById("aiPrompt").value.toLowerCase();
     const userCount = latestUsers.length;
     const groupCount = latestGroups.length;
-    const roleAssignmentCount = latestRoles.length;
+    const roleCount = latestRoles.length;
 
     let response = "";
 
@@ -482,16 +496,16 @@ Optional:
       response =
 `AI Identity Review: Privileged Roles
 
-Role assignments loaded: ${roleAssignmentCount}
+Directory roles loaded: ${roleCount}
 
 Observations:
-- Review privileged assignments regularly.
+- Review privileged roles regularly.
 - Avoid permanent admin assignments where possible.
 - Use Microsoft Entra Privileged Identity Management for just-in-time access.
 - Validate emergency access accounts separately.
 
 Next Action:
-Export all role assignments and review owners, scope, and assignment type.`;
+Review Global Administrator, Privileged Role Administrator, Security Administrator, and Conditional Access Administrator assignments.`;
     }
 
     else if (prompt.includes("risk") || prompt.includes("security")) {
@@ -501,11 +515,11 @@ Export all role assignments and review owners, scope, and assignment type.`;
 Current Loaded Data:
 - Users loaded: ${userCount}
 - Groups loaded: ${groupCount}
-- Role assignments loaded: ${roleAssignmentCount}
+- Directory roles loaded: ${roleCount}
 
 Recommended Checks:
 1. Confirm MFA is enforced for all users.
-2. Review privileged role assignments.
+2. Review privileged roles.
 3. Review guest users and external access.
 4. Remove stale accounts.
 5. Monitor sign-in risk and audit logs.
@@ -537,7 +551,7 @@ This demonstrates Microsoft Graph API, Entra ID governance, and AI-assisted iden
 Loaded Graph Data:
 - Users: ${userCount}
 - Groups: ${groupCount}
-- Role assignments: ${roleAssignmentCount}
+- Directory roles: ${roleCount}
 
 Summary:
 This demo connects to Microsoft Entra ID using MSAL and Microsoft Graph API.
@@ -548,17 +562,26 @@ privileged access review, and governance recommendations.`;
     document.getElementById("aiOutput").textContent = response;
   }
 
-  window.addEventListener("load", () => {
-    const accounts = msalInstance.getAllAccounts();
+  window.addEventListener("load", async () => {
+    try {
+      await msalInstance.initialize();
 
-    if (accounts.length > 0) {
-      signedInAccount = accounts[0];
-      msalInstance.setActiveAccount(signedInAccount);
-      updateStatus(true);
-      document.getElementById("profileOutput").textContent =
-        `Existing session found:\n${signedInAccount.username}`;
-    } else {
+      const accounts = msalInstance.getAllAccounts();
+
+      if (accounts.length > 0) {
+        signedInAccount = accounts[0];
+        msalInstance.setActiveAccount(signedInAccount);
+        updateStatus(true);
+
+        document.getElementById("profileOutput").textContent =
+          `Existing session found:\n${signedInAccount.username}`;
+      } else {
+        updateStatus(false);
+      }
+    } catch (error) {
       updateStatus(false);
+      document.getElementById("profileOutput").textContent =
+        "MSAL initialization failed:\n" + JSON.stringify(error, null, 2);
     }
   });
 </script>
