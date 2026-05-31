@@ -22,9 +22,7 @@
       --warning: #facc15;
     }
 
-    * {
-      box-sizing: border-box;
-    }
+    * { box-sizing: border-box; }
 
     body {
       margin: 0;
@@ -92,7 +90,7 @@
     }
 
     button:disabled {
-      opacity: 0.5;
+      opacity: 0.45;
       cursor: not-allowed;
     }
 
@@ -140,6 +138,12 @@
       border: 1px solid rgba(248, 113, 113, 0.35);
     }
 
+    .status.warn {
+      background: rgba(250, 204, 21, 0.15);
+      color: #fde68a;
+      border: 1px solid rgba(250, 204, 21, 0.35);
+    }
+
     .chips span {
       display: inline-block;
       background: #334155;
@@ -167,10 +171,6 @@
       background: #020617;
       margin-top: 30px;
     }
-
-    a {
-      color: var(--accent);
-    }
   </style>
 </head>
 
@@ -178,16 +178,14 @@
 <header>
   <h1>AI-Entra-Assistant</h1>
   <p>MSAL + Microsoft Graph Demo for Microsoft Entra ID</p>
-  <p><span id="loginStatus" class="status bad">Not signed in</span></p>
+  <p><span id="loginStatus" class="status warn">Initializing MSAL...</span></p>
 </header>
 
 <div class="container">
 
   <div class="card">
     <h2>1. App Configuration</h2>
-    <p class="small">
-      Current configuration used by this GitHub Pages demo.
-    </p>
+    <p class="small">Current configuration used by this GitHub Pages demo.</p>
 
     <pre>
 clientId: "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def"
@@ -201,32 +199,32 @@ redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"</pre>
 
   <div class="card">
     <h2>2. Microsoft Login</h2>
-    <button onclick="signIn()">Sign in with Microsoft</button>
-    <button class="danger" onclick="signOut()">Sign out</button>
-    <button class="secondary" onclick="getProfile()">Get My Profile</button>
-    <button class="secondary" onclick="getTenantInfo()">Get Tenant Info</button>
-    <pre id="profileOutput">Profile output will appear here.</pre>
+    <button id="btnSignIn" onclick="signIn()" disabled>Sign in with Microsoft</button>
+    <button id="btnSignOut" class="danger" onclick="signOut()" disabled>Sign out</button>
+    <button id="btnProfile" class="secondary" onclick="getProfile()" disabled>Get My Profile</button>
+    <button id="btnTenant" class="secondary" onclick="getTenantInfo()" disabled>Get Tenant Info</button>
+    <pre id="profileOutput">MSAL is loading...</pre>
   </div>
 
   <div class="grid">
     <div class="card">
       <h2>Users</h2>
       <p class="small">Requires User.Read.All or Directory.Read.All.</p>
-      <button onclick="getUsers()">Get Users</button>
+      <button id="btnUsers" onclick="getUsers()" disabled>Get Users</button>
       <pre id="usersOutput">Users will appear here.</pre>
     </div>
 
     <div class="card">
       <h2>Groups</h2>
       <p class="small">Requires Group.Read.All or Directory.Read.All.</p>
-      <button onclick="getGroups()">Get Groups</button>
+      <button id="btnGroups" onclick="getGroups()" disabled>Get Groups</button>
       <pre id="groupsOutput">Groups will appear here.</pre>
     </div>
 
     <div class="card">
       <h2>Directory Roles</h2>
       <p class="small">Requires RoleManagement.Read.Directory or Directory.Read.All.</p>
-      <button onclick="getDirectoryRoles()">Get Roles</button>
+      <button id="btnRoles" onclick="getDirectoryRoles()" disabled>Get Roles</button>
       <pre id="rolesOutput">Roles will appear here.</pre>
     </div>
   </div>
@@ -274,24 +272,22 @@ Optional:
   /***********************************************************
    * App Registration Details
    ***********************************************************/
-  const tenantId = "1a9cfd22-fcc1-4a7c-80f0-5da5561da0e5";
-  const clientId = "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def";
+  var tenantId = "1a9cfd22-fcc1-4a7c-80f0-5da5561da0e5";
+  var clientId = "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def";
 
-  const msalConfig = {
+  var msalConfig = {
     auth: {
       clientId: clientId,
-      authority: `https://login.microsoftonline.com/${tenantId}`,
+      authority: "https://login.microsoftonline.com/" + tenantId,
       redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"
-      // For local testing, change to:
-      // redirectUri: "http://localhost:5500/"
     },
     cache: {
-      cacheLocation: "localStorage",
+      cacheLocation: "sessionStorage",
       storeAuthStateInCookie: true
     }
   };
 
-  const loginRequest = {
+  var loginRequest = {
     scopes: [
       "User.Read",
       "User.Read.All",
@@ -302,46 +298,99 @@ Optional:
     prompt: "select_account"
   };
 
-  const msalInstance = new msal.PublicClientApplication(msalConfig);
-
-  let signedInAccount = null;
-  let latestUsers = [];
-  let latestGroups = [];
-  let latestRoles = [];
+  var msalInstance = null;
+  var signedInAccount = null;
+  var latestUsers = [];
+  var latestGroups = [];
+  var latestRoles = [];
 
   function formatError(error) {
     if (!error) {
       return "Unknown error";
     }
 
-    if (error.error || error.error_description || error.message) {
-      return JSON.stringify({
-        error: error.error,
-        errorCode: error.errorCode,
-        errorMessage: error.errorMessage,
-        errorDescription: error.error_description,
-        message: error.message,
-        correlationId: error.correlationId,
-        statusCode: error.statusCode
-      }, null, 2);
+    if (typeof error === "string") {
+      return error;
     }
 
-    try {
-      return JSON.stringify(error, null, 2);
-    } catch {
-      return String(error);
+    return JSON.stringify({
+      name: error.name,
+      message: error.message,
+      errorCode: error.errorCode,
+      errorMessage: error.errorMessage,
+      error: error.error,
+      errorDescription: error.error_description,
+      correlationId: error.correlationId,
+      statusCode: error.statusCode,
+      raw: error
+    }, null, 2);
+  }
+
+  function setButtonsEnabled(enabled) {
+    var ids = [
+      "btnSignIn",
+      "btnSignOut",
+      "btnProfile",
+      "btnTenant",
+      "btnUsers",
+      "btnGroups",
+      "btnRoles"
+    ];
+
+    ids.forEach(function(id) {
+      var btn = document.getElementById(id);
+      if (btn) {
+        btn.disabled = !enabled;
+      }
+    });
+  }
+
+  function updateStatus(state) {
+    var status = document.getElementById("loginStatus");
+
+    if (state === "signedIn") {
+      status.textContent = "Signed in";
+      status.className = "status good";
+    } else if (state === "ready") {
+      status.textContent = "MSAL ready - Not signed in";
+      status.className = "status bad";
+    } else if (state === "error") {
+      status.textContent = "MSAL error";
+      status.className = "status bad";
+    } else {
+      status.textContent = "Initializing MSAL...";
+      status.className = "status warn";
     }
   }
 
-  function updateStatus(isSignedIn) {
-    const status = document.getElementById("loginStatus");
+  function initMsal() {
+    try {
+      if (typeof msal === "undefined") {
+        throw new Error("MSAL library did not load. Check internet access or CDN blocking.");
+      }
 
-    if (isSignedIn) {
-      status.textContent = "Signed in";
-      status.className = "status good";
-    } else {
-      status.textContent = "Not signed in";
-      status.className = "status bad";
+      msalInstance = new msal.PublicClientApplication(msalConfig);
+
+      var accounts = msalInstance.getAllAccounts();
+
+      if (accounts.length > 0) {
+        signedInAccount = accounts[0];
+        msalInstance.setActiveAccount(signedInAccount);
+        updateStatus("signedIn");
+        document.getElementById("profileOutput").textContent =
+          "Existing session found:\n" + signedInAccount.username;
+      } else {
+        updateStatus("ready");
+        document.getElementById("profileOutput").textContent =
+          "MSAL loaded successfully. Click 'Sign in with Microsoft'.";
+      }
+
+      setButtonsEnabled(true);
+    } catch (error) {
+      updateStatus("error");
+      setButtonsEnabled(false);
+      document.getElementById("profileOutput").textContent =
+        "MSAL initialization failed:\n" + formatError(error);
     }
   }
 
@@ -351,13 +400,22 @@ Optional:
 
   async function signIn() {
     try {
-      const response = await msalInstance.loginPopup(loginRequest);
+      if (!msalInstance) {
+        initMsal();
+      }
+
+      if (!msalInstance) {
+        throw new Error("MSAL is not initialized.");
+      }
+
+      var response = await msalInstance.loginPopup(loginRequest);
+
       signedInAccount = response.account;
       msalInstance.setActiveAccount(response.account);
-      updateStatus(true);
+      updateStatus("signedIn");
 
       document.getElementById("profileOutput").textContent =
-        `Signed in successfully:\n${response.account.username}`;
+        "Signed in successfully:\n" + response.account.username;
     } catch (error) {
       document.getElementById("profileOutput").textContent =
         "Login failed:\n" + formatError(error);
@@ -366,17 +424,21 @@ Optional:
 
   async function signOut() {
     try {
-      const account = msalInstance.getActiveAccount();
+      if (!msalInstance) {
+        throw new Error("MSAL is not initialized.");
+      }
+
+      var account = msalInstance.getActiveAccount();
 
       if (account) {
-        await msalInstance.logoutPopup({ account });
+        await msalInstance.logoutPopup({ account: account });
       }
 
       signedInAccount = null;
       latestUsers = [];
       latestGroups = [];
       latestRoles = [];
-      updateStatus(false);
+      updateStatus("ready");
 
       document.getElementById("profileOutput").textContent = "Signed out.";
       document.getElementById("usersOutput").textContent = "Users will appear here.";
@@ -390,10 +452,19 @@ Optional:
   }
 
   async function getAccessToken() {
-    let account = msalInstance.getActiveAccount();
+    if (!msalInstance) {
+      initMsal();
+    }
+
+    if (!msalInstance) {
+      throw new Error("MSAL is not initialized.");
+    }
+
+    var account = msalInstance.getActiveAccount();
 
     if (!account) {
-      const accounts = msalInstance.getAllAccounts();
+      var accounts = msalInstance.getAllAccounts();
+
       if (accounts.length > 0) {
         account = accounts[0];
         msalInstance.setActiveAccount(account);
@@ -405,28 +476,31 @@ Optional:
     }
 
     try {
-      const tokenResponse = await msalInstance.acquireTokenSilent({
-        ...loginRequest,
+      var tokenResponse = await msalInstance.acquireTokenSilent({
+        scopes: loginRequest.scopes,
         account: account
       });
 
       return tokenResponse.accessToken;
     } catch (error) {
-      const tokenResponse = await msalInstance.acquireTokenPopup(loginRequest);
-      return tokenResponse.accessToken;
+      var popupResponse = await msalInstance.acquireTokenPopup({
+        scopes: loginRequest.scopes
+      });
+
+      return popupResponse.accessToken;
     }
   }
 
   async function callGraph(endpoint) {
-    const accessToken = await getAccessToken();
+    var accessToken = await getAccessToken();
 
-    const response = await fetch(endpoint, {
+    var response = await fetch(endpoint, {
       headers: {
-        Authorization: `Bearer ${accessToken}`
+        Authorization: "Bearer " + accessToken
       }
     });
 
-    const data = await response.json();
+    var data = await response.json();
 
     if (!response.ok) {
       throw data;
@@ -437,7 +511,8 @@ Optional:
 
   async function getProfile() {
     try {
-      const data = await callGraph("https://graph.microsoft.com/v1.0/me");
+      var data = await callGraph("https://graph.microsoft.com/v1.0/me");
+
       document.getElementById("profileOutput").textContent =
         JSON.stringify(data, null, 2);
     } catch (error) {
@@ -448,7 +523,8 @@ Optional:
 
   async function getTenantInfo() {
     try {
-      const data = await callGraph("https://graph.microsoft.com/v1.0/organization");
+      var data = await callGraph("https://graph.microsoft.com/v1.0/organization");
+
       document.getElementById("profileOutput").textContent =
         JSON.stringify(data, null, 2);
     } catch (error) {
@@ -459,7 +535,7 @@ Optional:
 
   async function getUsers() {
     try {
-      const data = await callGraph(
+      var data = await callGraph(
         "https://graph.microsoft.com/v1.0/users?$select=displayName,userPrincipalName,accountEnabled,userType&$top=10"
       );
 
@@ -475,7 +551,7 @@ Optional:
 
   async function getGroups() {
     try {
-      const data = await callGraph(
+      var data = await callGraph(
         "https://graph.microsoft.com/v1.0/groups?$select=displayName,mail,securityEnabled,groupTypes&$top=10"
       );
 
@@ -491,7 +567,7 @@ Optional:
 
   async function getDirectoryRoles() {
     try {
-      const data = await callGraph(
+      var data = await callGraph(
         "https://graph.microsoft.com/v1.0/directoryRoles"
       );
 
@@ -506,12 +582,12 @@ Optional:
   }
 
   function askAssistant() {
-    const prompt = document.getElementById("aiPrompt").value.toLowerCase();
-    const userCount = latestUsers.length;
-    const groupCount = latestGroups.length;
-    const roleCount = latestRoles.length;
+    var prompt = document.getElementById("aiPrompt").value.toLowerCase();
+    var userCount = latestUsers.length;
+    var groupCount = latestGroups.length;
+    var roleCount = latestRoles.length;
 
-    let response = "";
+    var response = "";
 
     if (prompt.includes("role") || prompt.includes("privileged")) {
       response =
@@ -543,10 +619,7 @@ Recommended Checks:
 2. Review privileged roles.
 3. Review guest users and external access.
 4. Remove stale accounts.
-5. Monitor sign-in risk and audit logs.
-
-Note:
-For deeper risk analysis, add AuditLog.Read.All and sign-in log queries.`;
+5. Monitor sign-in risk and audit logs.`;
     }
 
     else if (prompt.includes("governance") || prompt.includes("recommendation")) {
@@ -559,10 +632,7 @@ Recommended Controls:
 - Run monthly guest user access reviews.
 - Monitor inactive users.
 - Review group ownership.
-- Track license usage and reclaim unused licenses.
-
-Portfolio Value:
-This demonstrates Microsoft Graph API, Entra ID governance, and AI-assisted identity operations.`;
+- Track license usage and reclaim unused licenses.`;
     }
 
     else {
@@ -575,33 +645,16 @@ Loaded Graph Data:
 - Directory roles: ${roleCount}
 
 Summary:
-This demo connects to Microsoft Entra ID using MSAL and Microsoft Graph API.
-It can be extended to provide AI-powered identity reporting, security insights,
-privileged access review, and governance recommendations.`;
+This demo connects to Microsoft Entra ID using MSAL and Microsoft Graph API.`;
     }
 
     document.getElementById("aiOutput").textContent = response;
   }
 
-  window.addEventListener("load", () => {
-    try {
-      const accounts = msalInstance.getAllAccounts();
-
-      if (accounts.length > 0) {
-        signedInAccount = accounts[0];
-        msalInstance.setActiveAccount(signedInAccount);
-        updateStatus(true);
-
-        document.getElementById("profileOutput").textContent =
-          `Existing session found:\n${signedInAccount.username}`;
-      } else {
-        updateStatus(false);
-      }
-    } catch (error) {
-      updateStatus(false);
-      document.getElementById("profileOutput").textContent =
-        "MSAL load check failed:\n" + formatError(error);
-    }
+  window.addEventListener("load", function() {
+    setButtonsEnabled(false);
+    updateStatus("initializing");
+    initMsal();
   });
 </script>
 
