@@ -250,7 +250,7 @@ redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"</pre>
   <div class="card">
     <h2>3. Real AI Assistant</h2>
     <p class="small">
-      This section sends your loaded Graph summary to Gemini and generates real AI identity security recommendations.
+      This section loads Microsoft Graph data first, then sends the actual tenant summary to Gemini for grounded AI analysis.
     </p>
 
     <div class="chips">
@@ -652,6 +652,50 @@ Optional:
     };
   }
 
+  async function loadGraphDataIfMissing() {
+    var loadingNotes = [];
+
+    if (!latestTenantInfo) {
+      loadingNotes.push("Loading tenant info...");
+      await getTenantInfo();
+    }
+
+    if (!latestUsers || latestUsers.length === 0) {
+      loadingNotes.push("Loading users...");
+      await getUsers();
+    }
+
+    if (!latestGroups || latestGroups.length === 0) {
+      loadingNotes.push("Loading groups...");
+      await getGroups();
+    }
+
+    if (!latestRoles || latestRoles.length === 0) {
+      loadingNotes.push("Loading directory roles...");
+      await getDirectoryRoles();
+    }
+
+    return loadingNotes;
+  }
+
+  function getSelectedAnalysisType(userPrompt) {
+    var p = (userPrompt || "").toLowerCase();
+
+    if (p.includes("privileged") || p.includes("role")) {
+      return "PRIVILEGED_ROLE_REVIEW";
+    }
+
+    if (p.includes("executive")) {
+      return "EXECUTIVE_REPORT";
+    }
+
+    if (p.includes("recommendation") || p.includes("iam")) {
+      return "IAM_RECOMMENDATIONS";
+    }
+
+    return "TENANT_SECURITY_POSTURE";
+  }
+
   async function generateGeminiInsights() {
     var apiKey = localStorage.getItem("GEMINI_API_KEY");
     var userPrompt = document.getElementById("aiPrompt").value.trim();
@@ -666,33 +710,77 @@ Optional:
       userPrompt = "Analyze my Microsoft Entra tenant security posture.";
     }
 
+    document.getElementById("aiOutput").textContent =
+      "Collecting Microsoft Graph data before AI analysis...";
+
+    try {
+      await loadGraphDataIfMissing();
+    } catch (graphError) {
+      document.getElementById("aiOutput").textContent =
+        "Unable to load Microsoft Graph data before AI analysis:\n" + formatError(graphError);
+      return;
+    }
+
     var tenantSummary = buildTenantSummary();
+    var analysisType = getSelectedAnalysisType(userPrompt);
 
     var fullPrompt =
-`You are a senior Microsoft Entra ID, IAM, and cloud security architect.
+`You are a Microsoft Entra ID, IAM, and cloud security architect.
 
-Analyze the following Microsoft Graph tenant data from a portfolio demo.
+You MUST analyze ONLY the Microsoft Graph data provided below.
+Do NOT invent tenant facts.
+Do NOT create fake dates.
+Do NOT create fake prepared-by names.
+Do NOT say MFA, Conditional Access, PIM, sign-in risk, inactive users, or licenses are enabled unless that exact data is provided.
+If data is missing, clearly say "Not available in loaded Graph data".
+
+Analysis type requested:
+${analysisType}
 
 User request:
 ${userPrompt}
 
-Tenant data:
+Loaded Microsoft Graph data:
 ${JSON.stringify(tenantSummary, null, 2)}
 
-Return a clean report with:
-1. Executive summary
-2. Identity security score out of 100
-3. Key risks
-4. Governance gaps
-5. Practical recommendations
-6. Resume-friendly project summary
+Your response must follow this exact structure:
+
+# AI-Entra-Assistant Graph-Based Analysis
+
+## 1. Data Used
+Show:
+- Tenant name if available
+- Number of loaded users
+- Number of loaded guest users
+- Number of loaded disabled users
+- Number of loaded groups
+- Number of loaded security groups
+- Number of loaded directory roles
+
+## 2. What I Can Confirm From The Loaded Data
+List only facts visible in the provided JSON.
+
+## 3. Risks Observed From Loaded Data
+Use only the provided users, groups, and roles.
+If risk cannot be verified, say "Not available in loaded Graph data".
+
+## 4. Recommendations
+Give practical Microsoft Entra ID recommendations.
+Clearly separate:
+- Evidence-based recommendations
+- General best-practice recommendations
+
+## 5. Portfolio Summary
+Write 2-3 lines explaining what this project demonstrates technically.
 
 Important:
-- Be clear that this is based only on the loaded sample Graph data.
-- Do not invent facts that are not present in the data.
-- Keep the response professional and suitable for an IAM portfolio project.`;
+Keep the response professional, concise, and directly tied to the Graph data.`;
 
-    document.getElementById("aiOutput").textContent = "Calling Gemini AI...";
+    document.getElementById("aiOutput").textContent =
+      "Sending loaded Microsoft Graph data to Gemini AI...\n\n" +
+      "Users loaded: " + latestUsers.length + "\n" +
+      "Groups loaded: " + latestGroups.length + "\n" +
+      "Directory roles loaded: " + latestRoles.length;
 
     try {
       var response = await fetch(
@@ -714,8 +802,8 @@ Important:
               }
             ],
             generationConfig: {
-              temperature: 0.3,
-              maxOutputTokens: 1200
+              temperature: 0.1,
+              maxOutputTokens: 1400
             }
           })
         }
