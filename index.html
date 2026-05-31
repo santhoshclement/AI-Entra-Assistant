@@ -298,7 +298,8 @@ Optional:
       "Group.Read.All",
       "Directory.Read.All",
       "RoleManagement.Read.Directory"
-    ]
+    ],
+    prompt: "select_account"
   };
 
   const msalInstance = new msal.PublicClientApplication(msalConfig);
@@ -307,6 +308,30 @@ Optional:
   let latestUsers = [];
   let latestGroups = [];
   let latestRoles = [];
+
+  function formatError(error) {
+    if (!error) {
+      return "Unknown error";
+    }
+
+    if (error.error || error.error_description || error.message) {
+      return JSON.stringify({
+        error: error.error,
+        errorCode: error.errorCode,
+        errorMessage: error.errorMessage,
+        errorDescription: error.error_description,
+        message: error.message,
+        correlationId: error.correlationId,
+        statusCode: error.statusCode
+      }, null, 2);
+    }
+
+    try {
+      return JSON.stringify(error, null, 2);
+    } catch {
+      return String(error);
+    }
+  }
 
   function updateStatus(isSignedIn) {
     const status = document.getElementById("loginStatus");
@@ -326,8 +351,6 @@ Optional:
 
   async function signIn() {
     try {
-      await msalInstance.initialize();
-
       const response = await msalInstance.loginPopup(loginRequest);
       signedInAccount = response.account;
       msalInstance.setActiveAccount(response.account);
@@ -337,7 +360,7 @@ Optional:
         `Signed in successfully:\n${response.account.username}`;
     } catch (error) {
       document.getElementById("profileOutput").textContent =
-        "Login failed:\n" + JSON.stringify(error, null, 2);
+        "Login failed:\n" + formatError(error);
     }
   }
 
@@ -362,13 +385,11 @@ Optional:
       document.getElementById("aiOutput").textContent = "AI-style response will appear here.";
     } catch (error) {
       document.getElementById("profileOutput").textContent =
-        "Sign out failed:\n" + JSON.stringify(error, null, 2);
+        "Sign out failed:\n" + formatError(error);
     }
   }
 
   async function getAccessToken() {
-    await msalInstance.initialize();
-
     let account = msalInstance.getActiveAccount();
 
     if (!account) {
@@ -421,7 +442,7 @@ Optional:
         JSON.stringify(data, null, 2);
     } catch (error) {
       document.getElementById("profileOutput").textContent =
-        "Graph profile call failed:\n" + JSON.stringify(error, null, 2);
+        "Graph profile call failed:\n" + formatError(error);
     }
   }
 
@@ -432,7 +453,7 @@ Optional:
         JSON.stringify(data, null, 2);
     } catch (error) {
       document.getElementById("profileOutput").textContent =
-        "Tenant info call failed:\n" + JSON.stringify(error, null, 2);
+        "Tenant info call failed:\n" + formatError(error);
     }
   }
 
@@ -448,7 +469,7 @@ Optional:
         JSON.stringify(latestUsers, null, 2);
     } catch (error) {
       document.getElementById("usersOutput").textContent =
-        "Users call failed:\n" + JSON.stringify(error, null, 2);
+        "Users call failed:\n" + formatError(error);
     }
   }
 
@@ -464,7 +485,7 @@ Optional:
         JSON.stringify(latestGroups, null, 2);
     } catch (error) {
       document.getElementById("groupsOutput").textContent =
-        "Groups call failed:\n" + JSON.stringify(error, null, 2);
+        "Groups call failed:\n" + formatError(error);
     }
   }
 
@@ -480,7 +501,7 @@ Optional:
         JSON.stringify(latestRoles, null, 2);
     } catch (error) {
       document.getElementById("rolesOutput").textContent =
-        "Roles call failed:\n" + JSON.stringify(error, null, 2);
+        "Roles call failed:\n" + formatError(error);
     }
   }
 
@@ -562,10 +583,8 @@ privileged access review, and governance recommendations.`;
     document.getElementById("aiOutput").textContent = response;
   }
 
-  window.addEventListener("load", async () => {
+  window.addEventListener("load", () => {
     try {
-      await msalInstance.initialize();
-
       const accounts = msalInstance.getAllAccounts();
 
       if (accounts.length > 0) {
@@ -581,7 +600,7 @@ privileged access review, and governance recommendations.`;
     } catch (error) {
       updateStatus(false);
       document.getElementById("profileOutput").textContent =
-        "MSAL initialization failed:\n" + JSON.stringify(error, null, 2);
+        "MSAL load check failed:\n" + formatError(error);
     }
   });
 </script>
