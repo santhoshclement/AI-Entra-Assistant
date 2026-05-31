@@ -3,58 +3,30 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>AI-Entra-Assistant | Santhosh Clement</title>
+  <title>AI-Entra-Assistant Demo</title>
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
       background: #0f172a;
       color: #e5e7eb;
-      line-height: 1.6;
     }
 
     header {
-      padding: 70px 20px;
       text-align: center;
+      padding: 50px 20px;
       background: linear-gradient(135deg, #1e3a8a, #0f172a);
     }
 
-    header h1 {
-      font-size: 42px;
+    h1 {
+      font-size: 38px;
       margin-bottom: 10px;
     }
 
-    header p {
-      font-size: 18px;
-      color: #cbd5e1;
-    }
-
-    .btn {
-      display: inline-block;
-      margin: 10px;
-      padding: 12px 22px;
-      background: #38bdf8;
-      color: #020617;
-      text-decoration: none;
-      border-radius: 8px;
-      font-weight: bold;
-    }
-
-    section {
-      max-width: 1100px;
+    .container {
+      max-width: 1000px;
       margin: auto;
-      padding: 45px 20px;
-    }
-
-    h2 {
-      color: #38bdf8;
-      margin-bottom: 15px;
-    }
-
-    .grid {
-      display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-      gap: 20px;
+      padding: 30px 20px;
     }
 
     .card {
@@ -62,31 +34,50 @@
       padding: 22px;
       border-radius: 14px;
       border: 1px solid #334155;
+      margin-bottom: 20px;
     }
 
-    .tag {
+    textarea {
+      width: 100%;
+      height: 100px;
+      border-radius: 10px;
+      border: none;
+      padding: 15px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    button {
+      margin-top: 15px;
+      padding: 12px 20px;
+      background: #38bdf8;
+      color: #020617;
+      border: none;
+      border-radius: 8px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+
+    .response {
+      background: #020617;
+      padding: 18px;
+      border-radius: 10px;
+      white-space: pre-wrap;
+      color: #bae6fd;
+    }
+
+    .chips span {
       display: inline-block;
       background: #334155;
-      color: #e0f2fe;
-      padding: 7px 11px;
+      padding: 8px 12px;
       border-radius: 20px;
       margin: 5px;
-      font-size: 14px;
-    }
-
-    code {
-      background: #020617;
-      color: #7dd3fc;
-      display: block;
-      padding: 15px;
-      border-radius: 10px;
-      overflow-x: auto;
+      cursor: pointer;
     }
 
     footer {
       text-align: center;
-      padding: 30px;
-      background: #020617;
+      padding: 25px;
       color: #94a3b8;
     }
   </style>
@@ -96,109 +87,177 @@
 <header>
   <h1>AI-Entra-Assistant</h1>
   <p>AI-powered Identity Operations Assistant for Microsoft Entra ID</p>
-  <a class="btn" href="#">View GitHub Repo</a>
-  <a class="btn" href="#architecture">View Architecture</a>
 </header>
 
-<section>
-  <h2>Project Overview</h2>
-  <p>
-    AI-Entra-Assistant is a portfolio project that demonstrates how Azure OpenAI,
-    Microsoft Graph API, and Microsoft Entra ID can be combined to simplify identity
-    administration, reporting, access reviews, and security governance.
-  </p>
-</section>
+<div class="container">
 
-<section>
-  <h2>Problem Statement</h2>
   <div class="card">
-    <p>
-      Identity teams spend significant time answering repetitive operational questions:
-      inactive users, privileged roles, license usage, guest accounts, MFA status,
-      and access review preparation.
-    </p>
-  </div>
-</section>
+    <h2>Ask the AI Assistant</h2>
+    <p>Try asking about users, admins, guests, licenses, or security risks.</p>
 
-<section>
-  <h2>Solution</h2>
+    <div class="chips">
+      <span onclick="setPrompt('Show inactive users')">Inactive Users</span>
+      <span onclick="setPrompt('List global administrators')">Global Admins</span>
+      <span onclick="setPrompt('Show guest users')">Guest Users</span>
+      <span onclick="setPrompt('Generate license report')">License Report</span>
+      <span onclick="setPrompt('Find security risks')">Security Risks</span>
+    </div>
+
+    <textarea id="prompt" placeholder="Example: Show inactive users"></textarea>
+    <button onclick="askAssistant()">Ask Assistant</button>
+  </div>
+
   <div class="card">
-    <p>
-      This assistant allows administrators to ask natural language questions and receive
-      identity insights powered by AI and Microsoft Graph API.
-    </p>
+    <h2>AI Response</h2>
+    <div id="response" class="response">Your AI response will appear here.</div>
   </div>
-</section>
 
-<section>
-  <h2>Sample AI Prompts</h2>
-  <div class="grid">
-    <div class="card">Show inactive users for the last 90 days</div>
-    <div class="card">List all Global Administrators</div>
-    <div class="card">Find guest users in the tenant</div>
-    <div class="card">Generate license usage summary</div>
-    <div class="card">Show users without MFA registration</div>
-    <div class="card">Review privileged access assignments</div>
-  </div>
-</section>
-
-<section id="architecture">
-  <h2>Architecture</h2>
-  <code>
-User → Web UI → Backend API → Azure OpenAI → Microsoft Graph API → Microsoft Entra ID
-  </code>
-</section>
-
-<section>
-  <h2>Core Features</h2>
-  <div class="grid">
-    <div class="card">
-      <h3>Identity Reporting</h3>
-      <p>Generate user, group, role, and license reports from Microsoft Graph API.</p>
-    </div>
-    <div class="card">
-      <h3>Privileged Access Review</h3>
-      <p>Identify privileged role assignments and risky admin accounts.</p>
-    </div>
-    <div class="card">
-      <h3>Security Insights</h3>
-      <p>Detect inactive accounts, guest users, and missing security controls.</p>
-    </div>
-    <div class="card">
-      <h3>AI Summary</h3>
-      <p>Convert raw Graph API output into readable recommendations.</p>
-    </div>
-  </div>
-</section>
-
-<section>
-  <h2>Skills Demonstrated</h2>
-  <span class="tag">Azure OpenAI</span>
-  <span class="tag">Microsoft Graph API</span>
-  <span class="tag">Microsoft Entra ID</span>
-  <span class="tag">Identity Governance</span>
-  <span class="tag">PIM</span>
-  <span class="tag">Conditional Access</span>
-  <span class="tag">Python</span>
-  <span class="tag">FastAPI</span>
-  <span class="tag">Security Automation</span>
-</section>
-
-<section>
-  <h2>Resume Description</h2>
   <div class="card">
-    <p>
-      Developed an AI-powered identity operations assistant integrating Azure OpenAI,
-      Microsoft Graph API, and Microsoft Entra ID to automate identity reporting,
-      privileged access review, inactive account detection, license analysis, and
-      security governance recommendations.
-    </p>
+    <h2>Architecture</h2>
+    <p>User → GitHub Pages UI → AI Logic → Sample Entra Dataset → Identity Insights</p>
   </div>
-</section>
+
+  <div class="card">
+    <h2>Skills Demonstrated</h2>
+    <p>Azure OpenAI, Microsoft Graph API, Microsoft Entra ID, IAM Automation, Identity Governance, Security Reporting</p>
+  </div>
+
+</div>
 
 <footer>
-  <p>Created by Santhosh Clement | AI + Identity + Cloud Security Portfolio Project</p>
+  Created by Santhosh Clement | AI + Identity + Cloud Security Demo
 </footer>
+
+<script>
+  const sampleData = {
+    inactiveUsers: [
+      "john.adams@contoso.com - Last sign-in: 120 days ago",
+      "mary.jones@contoso.com - Last sign-in: 98 days ago",
+      "guest.vendor@external.com - Last sign-in: 150 days ago",
+      "old.admin@contoso.com - Last sign-in: 210 days ago"
+    ],
+    globalAdmins: [
+      "admin.one@contoso.com",
+      "cloud.admin@contoso.com",
+      "breakglass@contoso.com"
+    ],
+    guestUsers: [
+      "vendor.user@partner.com",
+      "consultant.demo@external.com",
+      "auditor.temp@external.com"
+    ],
+    licenses: {
+      "Microsoft 365 E5": 450,
+      "Microsoft 365 E3": 220,
+      "Unassigned Licenses": 37
+    }
+  };
+
+  function setPrompt(text) {
+    document.getElementById("prompt").value = text;
+  }
+
+  function askAssistant() {
+    const prompt = document.getElementById("prompt").value.toLowerCase();
+    const responseBox = document.getElementById("response");
+
+    let response = "";
+
+    if (prompt.includes("inactive")) {
+      response =
+`AI Analysis: Inactive Users Detected
+
+Found ${sampleData.inactiveUsers.length} inactive users:
+
+${sampleData.inactiveUsers.join("\n")}
+
+Recommendation:
+- Review accounts inactive for more than 90 days.
+- Disable unused accounts after business approval.
+- Remove stale guest accounts.
+- Validate if any inactive account has privileged access.`;
+    }
+
+    else if (prompt.includes("global") || prompt.includes("admin")) {
+      response =
+`AI Analysis: Privileged Role Review
+
+Global Administrators:
+
+${sampleData.globalAdmins.join("\n")}
+
+Risk Observation:
+- ${sampleData.globalAdmins.length} accounts have Global Administrator access.
+
+Recommendation:
+- Use Privileged Identity Management.
+- Keep only emergency accounts permanently assigned.
+- Enforce MFA and Conditional Access.`;
+    }
+
+    else if (prompt.includes("guest")) {
+      response =
+`AI Analysis: Guest User Review
+
+Guest Users Found:
+
+${sampleData.guestUsers.join("\n")}
+
+Recommendation:
+- Review external users monthly.
+- Remove expired vendor accounts.
+- Apply Conditional Access for guest users.`;
+    }
+
+    else if (prompt.includes("license")) {
+      response =
+`AI Analysis: License Usage Report
+
+Microsoft 365 E5: ${sampleData.licenses["Microsoft 365 E5"]}
+Microsoft 365 E3: ${sampleData.licenses["Microsoft 365 E3"]}
+Unassigned Licenses: ${sampleData.licenses["Unassigned Licenses"]}
+
+Recommendation:
+- Reclaim licenses from inactive users.
+- Review high-cost E5 assignments.
+- Automate monthly license reports.`;
+    }
+
+    else if (prompt.includes("risk") || prompt.includes("security")) {
+      response =
+`AI Security Summary
+
+Potential Risks:
+- Inactive accounts found.
+- Guest users require review.
+- Global Administrator assignments should be minimized.
+- License wastage detected.
+
+Recommended Actions:
+1. Enable MFA for all users.
+2. Use PIM for privileged roles.
+3. Review inactive accounts older than 90 days.
+4. Remove unused guest accounts.
+5. Generate monthly identity governance reports.`;
+    }
+
+    else {
+      response =
+`AI Assistant Response
+
+I can help with:
+- Inactive user detection
+- Global Administrator review
+- Guest user reporting
+- License usage summary
+- Security recommendations
+
+Try asking: "Show inactive users"`;
+    }
+
+    responseBox.textContent = response;
+  }
+</script>
 
 </body>
 </html>
