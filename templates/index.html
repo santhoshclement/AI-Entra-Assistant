@@ -1,288 +1,280 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>AI Entra Assistant</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI Entra Assistant</title>
 
-    <!-- MSAL Browser Library -->
-    <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 
-    <style>
-        body {
-            margin: 0;
-            font-family: Arial, sans-serif;
-            background: linear-gradient(135deg, #0f172a, #1e40af);
-            color: #ffffff;
-            min-height: 100vh;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .container {
-            width: 90%;
-            max-width: 850px;
-            background: rgba(255, 255, 255, 0.10);
-            backdrop-filter: blur(12px);
-            border-radius: 20px;
-            padding: 40px;
-            box-shadow: 0 20px 50px rgba(0,0,0,0.35);
-            text-align: center;
-        }
-
-        h1 {
-            font-size: 42px;
-            margin-bottom: 10px;
-        }
-
-        .subtitle {
-            color: #dbeafe;
-            font-size: 18px;
-            margin-bottom: 30px;
-        }
-
-        .features {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
-            gap: 15px;
-            margin: 30px 0;
-        }
-
-        .feature {
-            background: rgba(255,255,255,0.12);
-            padding: 18px;
-            border-radius: 14px;
-            border: 1px solid rgba(255,255,255,0.16);
-        }
-
-        button {
-            background: #38bdf8;
-            color: #082f49;
-            border: none;
-            padding: 14px 26px;
-            font-size: 16px;
-            border-radius: 10px;
-            cursor: pointer;
-            font-weight: bold;
-            margin: 8px;
-        }
-
-        button:hover {
-            background: #7dd3fc;
-        }
-
-        .logout {
-            background: #f87171;
-            color: #ffffff;
-        }
-
-        .status {
-            margin-top: 25px;
-            background: rgba(0,0,0,0.25);
-            padding: 15px;
-            border-radius: 12px;
-            font-size: 14px;
-            word-break: break-word;
-        }
-
-        .hidden {
-            display: none;
-        }
-
-        .user-card {
-            margin-top: 25px;
-            background: rgba(255,255,255,0.15);
-            border-radius: 14px;
-            padding: 20px;
-            text-align: left;
-        }
-
-        .note {
-            color: #bfdbfe;
-            font-size: 13px;
-            margin-top: 25px;
-        }
-    </style>
+  <style>
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: linear-gradient(135deg, #0f172a, #1e40af);
+      color: #ffffff;
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    .container {
+      width: 90%;
+      max-width: 850px;
+      background: rgba(255, 255, 255, 0.10);
+      backdrop-filter: blur(12px);
+      border-radius: 20px;
+      padding: 40px;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.35);
+      text-align: center;
+    }
+    h1 { font-size: 42px; margin-bottom: 10px; }
+    .subtitle { color: #dbeafe; font-size: 18px; margin-bottom: 30px; }
+    .features {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 15px;
+      margin: 30px 0;
+    }
+    .feature {
+      background: rgba(255,255,255,0.12);
+      padding: 18px;
+      border-radius: 14px;
+      border: 1px solid rgba(255,255,255,0.16);
+    }
+    button {
+      background: #38bdf8;
+      color: #082f49;
+      border: none;
+      padding: 14px 26px;
+      font-size: 16px;
+      border-radius: 10px;
+      cursor: pointer;
+      font-weight: bold;
+      margin: 8px;
+    }
+    button:hover { background: #7dd3fc; }
+    .logout { background: #f87171; color: #ffffff; }
+    .status {
+      margin-top: 25px;
+      background: rgba(0,0,0,0.25);
+      padding: 15px;
+      border-radius: 12px;
+      font-size: 14px;
+      word-break: break-word;
+    }
+    .hidden { display: none; }
+    .user-card {
+      margin-top: 25px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 14px;
+      padding: 20px;
+      text-align: left;
+    }
+    .note { color: #bfdbfe; font-size: 13px; margin-top: 25px; }
+  </style>
 </head>
 
 <body>
-    <div class="container">
-        <h1>🤖 AI Entra Assistant</h1>
-        <p class="subtitle">
-            Flask + Render + Microsoft Entra ID Login Demo
-        </p>
+  <div class="container">
+    <h1>🤖 AI Entra Assistant</h1>
+    <p class="subtitle">Flask + Render + Microsoft Entra ID Login Demo</p>
 
-        <div class="features">
-            <div class="feature">🔐 Entra ID Login</div>
-            <div class="feature">👤 User Profile</div>
-            <div class="feature">📊 Access Review</div>
-            <div class="feature">🧠 AI Recommendations</div>
-        </div>
-
-        <div id="loginSection">
-            <button onclick="login()">Login with Microsoft</button>
-        </div>
-
-        <div id="userSection" class="hidden">
-            <button onclick="getUserProfile()">Get My Profile</button>
-            <button class="logout" onclick="logout()">Logout</button>
-
-            <div class="user-card">
-                <h3>Signed-in User</h3>
-                <p><strong>Name:</strong> <span id="displayName">-</span></p>
-                <p><strong>Email:</strong> <span id="email">-</span></p>
-                <p><strong>Tenant ID:</strong> <span id="tenantId">-</span></p>
-            </div>
-        </div>
-
-        <div class="status" id="statusBox">
-            Status: Ready
-        </div>
-
-        <p class="note">
-            Important: Replace CLIENT_ID below with your Azure App Registration Application Client ID.
-        </p>
+    <div class="features">
+      <div class="feature">🔐 Entra ID Login</div>
+      <div class="feature">👤 User Profile</div>
+      <div class="feature">📊 Access Review</div>
+      <div class="feature">🧠 AI Recommendations</div>
     </div>
 
-    <script>
-        const msalConfig = {
-            auth: {
-                clientId: "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def",
-                authority: "https://login.microsoftonline.com/common",
-                redirectUri: window.location.origin
-            },
-            cache: {
-                cacheLocation: "sessionStorage",
-                storeAuthStateInCookie: false
-            }
-        };
+    <div id="loginSection">
+      <button id="loginBtn" type="button">Login with Microsoft</button>
+    </div>
 
-        const loginRequest = {
-            scopes: ["User.Read"]
-        };
+    <div id="userSection" class="hidden">
+      <button id="profileBtn" type="button">Get My Profile</button>
+      <button id="logoutBtn" type="button" class="logout">Logout</button>
 
-        const tokenRequest = {
-            scopes: ["User.Read"]
-        };
+      <div class="user-card">
+        <h3>Signed-in User</h3>
+        <p><strong>Name:</strong> <span id="displayName">-</span></p>
+        <p><strong>Email:</strong> <span id="email">-</span></p>
+        <p><strong>Tenant ID:</strong> <span id="tenantId">-</span></p>
+      </div>
+    </div>
 
-        const msalInstance = new msal.PublicClientApplication(msalConfig);
+    <div class="status" id="statusBox">Status: Loading...</div>
 
-        function setStatus(message) {
-            document.getElementById("statusBox").innerText = "Status: " + message;
+    <p class="note">Redirect login is used to avoid MSAL popup errors.</p>
+  </div>
+
+  <script>
+    const msalConfig = {
+      auth: {
+        clientId: "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def",
+        authority: "https://login.microsoftonline.com/common",
+        redirectUri: window.location.origin
+      },
+      cache: {
+        cacheLocation: "sessionStorage",
+        storeAuthStateInCookie: false
+      }
+    };
+
+    const loginRequest = { scopes: ["User.Read"] };
+    const tokenRequest = { scopes: ["User.Read"] };
+
+    let msalInstance = null;
+    let msalReady = false;
+
+    function setStatus(message) {
+      document.getElementById("statusBox").innerText = "Status: " + message;
+    }
+
+    function showSignedInState(account) {
+      document.getElementById("loginSection").classList.add("hidden");
+      document.getElementById("userSection").classList.remove("hidden");
+      document.getElementById("displayName").innerText = account.name || "-";
+      document.getElementById("email").innerText = account.username || "-";
+      document.getElementById("tenantId").innerText = account.tenantId || "-";
+    }
+
+    function showSignedOutState() {
+      document.getElementById("loginSection").classList.remove("hidden");
+      document.getElementById("userSection").classList.add("hidden");
+    }
+
+    async function initializeMsal() {
+      try {
+        msalInstance = new msal.PublicClientApplication(msalConfig);
+
+        if (typeof msalInstance.initialize === "function") {
+          await msalInstance.initialize();
         }
 
-        async function initializeMsal() {
-            try {
-                await msalInstance.initialize();
+        const response = await msalInstance.handleRedirectPromise();
+        msalReady = true;
 
-                const response = await msalInstance.handleRedirectPromise();
-
-                if (response && response.account) {
-                    msalInstance.setActiveAccount(response.account);
-                    showSignedInState(response.account);
-                    setStatus("Login successful: " + response.account.username);
-                    return;
-                }
-
-                const accounts = msalInstance.getAllAccounts();
-
-                if (accounts.length > 0) {
-                    msalInstance.setActiveAccount(accounts[0]);
-                    showSignedInState(accounts[0]);
-                    setStatus("Already signed in: " + accounts[0].username);
-                } else {
-                    setStatus("Not signed in");
-                }
-            } catch (error) {
-                console.error(error);
-                setStatus("MSAL initialization failed: " + error.message);
-            }
+        if (response && response.account) {
+          msalInstance.setActiveAccount(response.account);
+          showSignedInState(response.account);
+          setStatus("Login successful: " + response.account.username);
+          return;
         }
 
-        async function login() {
-            try {
-                setStatus("Redirecting to Microsoft login...");
-                await msalInstance.loginRedirect(loginRequest);
-            } catch (error) {
-                console.error(error);
-                setStatus("Login failed: " + error.message);
-            }
+        const accounts = msalInstance.getAllAccounts();
+
+        if (accounts.length > 0) {
+          msalInstance.setActiveAccount(accounts[0]);
+          showSignedInState(accounts[0]);
+          setStatus("Already signed in: " + accounts[0].username);
+        } else {
+          showSignedOutState();
+          setStatus("Not signed in");
+        }
+      } catch (error) {
+        console.error(error);
+        setStatus("MSAL initialization failed: " + error.message);
+      }
+    }
+
+    async function login() {
+      try {
+        if (!msalReady || !msalInstance) {
+          setStatus("MSAL is still loading. Please wait a few seconds and try again.");
+          return;
         }
 
-        async function logout() {
-            const account = msalInstance.getActiveAccount();
+        setStatus("Redirecting to Microsoft login...");
+        await msalInstance.loginRedirect(loginRequest);
+      } catch (error) {
+        console.error(error);
+        setStatus("Login failed: " + error.message);
+      }
+    }
 
-            await msalInstance.logoutRedirect({
-                account: account,
-                postLogoutRedirectUri: window.location.origin
-            });
+    async function logout() {
+      try {
+        if (!msalReady || !msalInstance) {
+          setStatus("MSAL is not ready.");
+          return;
         }
 
-        function showSignedInState(account) {
-            document.getElementById("loginSection").classList.add("hidden");
-            document.getElementById("userSection").classList.remove("hidden");
+        const account = msalInstance.getActiveAccount();
 
-            document.getElementById("displayName").innerText = account.name || "-";
-            document.getElementById("email").innerText = account.username || "-";
-            document.getElementById("tenantId").innerText = account.tenantId || "-";
+        await msalInstance.logoutRedirect({
+          account: account,
+          postLogoutRedirectUri: window.location.origin
+        });
+      } catch (error) {
+        console.error(error);
+        setStatus("Logout failed: " + error.message);
+      }
+    }
+
+    async function getAccessToken() {
+      const account = msalInstance.getActiveAccount();
+
+      if (!account) {
+        setStatus("No active account. Please login first.");
+        return null;
+      }
+
+      try {
+        const response = await msalInstance.acquireTokenSilent({
+          ...tokenRequest,
+          account: account
+        });
+
+        return response.accessToken;
+      } catch (error) {
+        console.warn("Silent token failed, redirecting for token", error);
+        await msalInstance.acquireTokenRedirect(tokenRequest);
+        return null;
+      }
+    }
+
+    async function getUserProfile() {
+      try {
+        if (!msalReady || !msalInstance) {
+          setStatus("MSAL is not ready.");
+          return;
         }
 
-        async function getAccessToken() {
-            const account = msalInstance.getActiveAccount();
+        setStatus("Getting Microsoft Graph profile...");
 
-            if (!account) {
-                setStatus("No active account. Please login first.");
-                return null;
-            }
+        const accessToken = await getAccessToken();
 
-            try {
-                const response = await msalInstance.acquireTokenSilent({
-                    ...tokenRequest,
-                    account: account
-                });
+        if (!accessToken) return;
 
-                return response.accessToken;
-            } catch (error) {
-                console.warn("Silent token failed, using redirect", error);
-                await msalInstance.acquireTokenRedirect(tokenRequest);
-            }
+        const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
+          headers: { Authorization: "Bearer " + accessToken }
+        });
+
+        const profile = await graphResponse.json();
+
+        if (!graphResponse.ok) {
+          setStatus("Graph API error: " + JSON.stringify(profile));
+          return;
         }
 
-        async function getUserProfile() {
-            try {
-                setStatus("Getting Microsoft Graph profile...");
+        document.getElementById("displayName").innerText = profile.displayName || "-";
+        document.getElementById("email").innerText = profile.userPrincipalName || profile.mail || "-";
 
-                const accessToken = await getAccessToken();
+        setStatus("Profile loaded successfully");
+      } catch (error) {
+        console.error(error);
+        setStatus("Profile loading failed: " + error.message);
+      }
+    }
 
-                if (!accessToken) {
-                    return;
-                }
+    document.addEventListener("DOMContentLoaded", function () {
+      document.getElementById("loginBtn").addEventListener("click", login);
+      document.getElementById("profileBtn").addEventListener("click", getUserProfile);
+      document.getElementById("logoutBtn").addEventListener("click", logout);
 
-                const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
-                    headers: {
-                        Authorization: "Bearer " + accessToken
-                    }
-                });
-
-                const profile = await graphResponse.json();
-
-                if (!graphResponse.ok) {
-                    setStatus("Graph API error: " + JSON.stringify(profile));
-                    return;
-                }
-
-                document.getElementById("displayName").innerText = profile.displayName || "-";
-                document.getElementById("email").innerText = profile.userPrincipalName || profile.mail || "-";
-
-                setStatus("Profile loaded successfully");
-            } catch (error) {
-                console.error(error);
-                setStatus("Profile loading failed: " + error.message);
-            }
-        }
-
-        initializeMsal();
-    </script>
+      initializeMsal();
+    });
+  </script>
 </body>
 </html>
