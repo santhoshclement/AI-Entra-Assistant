@@ -5,75 +5,124 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Entra Assistant</title>
 
-  <!-- MSAL Browser from jsDelivr CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 
   <style>
     body {
       margin: 0;
       font-family: Arial, sans-serif;
-      background: linear-gradient(135deg, #0f172a, #1e40af);
+      background: linear-gradient(135deg, #071a45, #314b9a);
       color: #ffffff;
       min-height: 100vh;
       display: flex;
       align-items: center;
       justify-content: center;
     }
+
     .container {
-      width: 90%;
-      max-width: 850px;
-      background: rgba(255, 255, 255, 0.10);
-      backdrop-filter: blur(12px);
-      border-radius: 20px;
-      padding: 40px;
+      width: 92%;
+      max-width: 980px;
+      background: rgba(255, 255, 255, 0.12);
+      border-radius: 22px;
+      padding: 38px;
       box-shadow: 0 20px 50px rgba(0,0,0,0.35);
       text-align: center;
     }
-    h1 { font-size: 42px; margin-bottom: 10px; }
-    .subtitle { color: #dbeafe; font-size: 18px; margin-bottom: 30px; }
+
+    h1 {
+      font-size: 42px;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #dbeafe;
+      font-size: 18px;
+      margin-bottom: 28px;
+    }
+
     .features {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(190px, 1fr));
       gap: 15px;
-      margin: 30px 0;
+      margin: 28px 0;
     }
+
     .feature {
-      background: rgba(255,255,255,0.12);
+      background: rgba(255,255,255,0.13);
       padding: 18px;
       border-radius: 14px;
-      border: 1px solid rgba(255,255,255,0.16);
+      border: 1px solid rgba(255,255,255,0.18);
     }
+
     button {
       background: #38bdf8;
       color: #082f49;
       border: none;
-      padding: 14px 26px;
+      padding: 14px 24px;
       font-size: 16px;
       border-radius: 10px;
       cursor: pointer;
       font-weight: bold;
       margin: 8px;
     }
-    button:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
+
+    button:hover {
+      background: #7dd3fc;
     }
-    .logout { background: #f87171; color: #ffffff; }
+
+    .logout {
+      background: #fb7185;
+      color: #ffffff;
+    }
+
+    .analyze {
+      background: #a78bfa;
+      color: #ffffff;
+    }
+
     .status {
-      margin-top: 25px;
-      background: rgba(0,0,0,0.25);
+      margin-top: 24px;
+      background: rgba(0,0,0,0.28);
       padding: 15px;
       border-radius: 12px;
       font-size: 14px;
       word-break: break-word;
     }
-    .hidden { display: none; }
-    .user-card {
-      margin-top: 25px;
+
+    .hidden {
+      display: none;
+    }
+
+    .card {
+      margin-top: 24px;
       background: rgba(255,255,255,0.15);
-      border-radius: 14px;
-      padding: 20px;
+      border-radius: 16px;
+      padding: 22px;
       text-align: left;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    ul {
+      line-height: 1.8;
+      padding-left: 22px;
+    }
+
+    .recommendation {
+      background: rgba(15, 23, 42, 0.45);
+      border-left: 5px solid #38bdf8;
+      padding: 16px;
+      border-radius: 12px;
+      margin-top: 12px;
+    }
+
+    .small {
+      color: #dbeafe;
+      font-size: 13px;
     }
   </style>
 </head>
@@ -81,32 +130,57 @@
 <body>
   <div class="container">
     <h1>🤖 AI Entra Assistant</h1>
-    <p class="subtitle">Flask + Render + Microsoft Entra ID Login Demo</p>
+    <p class="subtitle">Microsoft Entra ID Login + Microsoft Graph Access Review Demo</p>
 
     <div class="features">
       <div class="feature">🔐 Entra ID Login</div>
       <div class="feature">👤 User Profile</div>
-      <div class="feature">📊 Access Review</div>
-      <div class="feature">🧠 AI Recommendations</div>
+      <div class="feature">👥 Group Membership</div>
+      <div class="feature">🧠 Access Recommendations</div>
     </div>
 
     <div id="loginSection">
-      <button id="loginBtn" type="button" disabled>Loading MSAL...</button>
+      <button id="loginBtn" type="button">Login with Microsoft</button>
     </div>
 
     <div id="userSection" class="hidden">
       <button id="profileBtn" type="button">Get My Profile</button>
+      <button id="groupsBtn" type="button">Get My Groups</button>
+      <button id="analyzeBtn" type="button" class="analyze">Analyze My Access</button>
       <button id="logoutBtn" type="button" class="logout">Logout</button>
 
-      <div class="user-card">
-        <h3>Signed-in User</h3>
-        <p><strong>Name:</strong> <span id="displayName">-</span></p>
-        <p><strong>Email:</strong> <span id="email">-</span></p>
-        <p><strong>Tenant ID:</strong> <span id="tenantId">-</span></p>
+      <div class="grid">
+        <div class="card">
+          <h3>Signed-in User</h3>
+          <p><strong>Name:</strong> <span id="displayName">-</span></p>
+          <p><strong>Email:</strong> <span id="email">-</span></p>
+          <p><strong>Tenant ID:</strong> <span id="tenantId">-</span></p>
+        </div>
+
+        <div class="card">
+          <h3>Access Summary</h3>
+          <p><strong>Total Groups:</strong> <span id="groupCount">0</span></p>
+          <p><strong>Risk Level:</strong> <span id="riskLevel">Not analyzed</span></p>
+          <p class="small">Group data requires Microsoft Graph permission.</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>Group Membership</h3>
+        <ul id="groupsList">
+          <li>No groups loaded yet.</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h3>AI-Style Access Recommendations</h3>
+        <div id="recommendations">
+          <p>No analysis yet. Click <strong>Analyze My Access</strong>.</p>
+        </div>
       </div>
     </div>
 
-    <div class="status" id="statusBox">Status: Loading MSAL...</div>
+    <div class="status" id="statusBox">Status: Ready</div>
   </div>
 
   <script>
@@ -122,23 +196,25 @@
       }
     };
 
-    const loginRequest = { scopes: ["User.Read"] };
-    const tokenRequest = { scopes: ["User.Read"] };
+    const loginRequest = {
+      scopes: ["User.Read", "GroupMember.Read.All"]
+    };
+
+    const tokenRequest = {
+      scopes: ["User.Read", "GroupMember.Read.All"]
+    };
+
     let msalInstance = null;
+    let loadedGroups = [];
 
     function setStatus(message) {
       document.getElementById("statusBox").innerText = "Status: " + message;
     }
 
-    function enableLoginButton() {
-      const btn = document.getElementById("loginBtn");
-      btn.disabled = false;
-      btn.innerText = "Login with Microsoft";
-    }
-
     function showSignedInState(account) {
       document.getElementById("loginSection").classList.add("hidden");
       document.getElementById("userSection").classList.remove("hidden");
+
       document.getElementById("displayName").innerText = account.name || "-";
       document.getElementById("email").innerText = account.username || "-";
       document.getElementById("tenantId").innerText = account.tenantId || "-";
@@ -147,13 +223,12 @@
     function showSignedOutState() {
       document.getElementById("loginSection").classList.remove("hidden");
       document.getElementById("userSection").classList.add("hidden");
-      enableLoginButton();
     }
 
     async function initializeMsal() {
       try {
         if (!window.msal || !window.msal.PublicClientApplication) {
-          setStatus("MSAL library not found. Open DevTools > Network and check if msal-browser.min.js is blocked.");
+          setStatus("MSAL library failed to load. Check CDN/internet access.");
           return;
         }
 
@@ -180,17 +255,12 @@
         }
       } catch (error) {
         console.error(error);
-        enableLoginButton();
         setStatus("MSAL initialization failed: " + error.message);
       }
     }
 
     async function login() {
       try {
-        if (!msalInstance) {
-          setStatus("MSAL is not initialized. Refresh the page.");
-          return;
-        }
         setStatus("Redirecting to Microsoft login...");
         await msalInstance.loginRedirect(loginRequest);
       } catch (error) {
@@ -202,6 +272,7 @@
     async function logout() {
       try {
         const account = msalInstance.getActiveAccount();
+
         await msalInstance.logoutRedirect({
           account: account,
           postLogoutRedirectUri: window.location.origin
@@ -225,9 +296,10 @@
           ...tokenRequest,
           account: account
         });
+
         return response.accessToken;
       } catch (error) {
-        console.warn(error);
+        console.warn("Silent token failed. Redirecting for consent/token.", error);
         await msalInstance.acquireTokenRedirect(tokenRequest);
         return null;
       }
@@ -236,11 +308,14 @@
     async function getUserProfile() {
       try {
         setStatus("Getting Microsoft Graph profile...");
+
         const accessToken = await getAccessToken();
         if (!accessToken) return;
 
         const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
-          headers: { Authorization: "Bearer " + accessToken }
+          headers: {
+            Authorization: "Bearer " + accessToken
+          }
         });
 
         const profile = await graphResponse.json();
@@ -252,6 +327,7 @@
 
         document.getElementById("displayName").innerText = profile.displayName || "-";
         document.getElementById("email").innerText = profile.userPrincipalName || profile.mail || "-";
+
         setStatus("Profile loaded successfully");
       } catch (error) {
         console.error(error);
@@ -259,10 +335,86 @@
       }
     }
 
+    async function getGroups() {
+      try {
+        setStatus("Getting group memberships from Microsoft Graph...");
+
+        const accessToken = await getAccessToken();
+        if (!accessToken) return;
+
+        const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me/memberOf?$select=displayName,id", {
+          headers: {
+            Authorization: "Bearer " + accessToken
+          }
+        });
+
+        const result = await graphResponse.json();
+
+        if (!graphResponse.ok) {
+          setStatus("Graph API error: " + JSON.stringify(result));
+          return;
+        }
+
+        loadedGroups = result.value || [];
+        const list = document.getElementById("groupsList");
+        list.innerHTML = "";
+
+        if (loadedGroups.length === 0) {
+          list.innerHTML = "<li>No group memberships returned.</li>";
+        } else {
+          loadedGroups.forEach(group => {
+            const li = document.createElement("li");
+            li.innerText = group.displayName || group.id || "Unnamed group";
+            list.appendChild(li);
+          });
+        }
+
+        document.getElementById("groupCount").innerText = loadedGroups.length;
+        setStatus("Groups loaded successfully");
+      } catch (error) {
+        console.error(error);
+        setStatus("Group loading failed: " + error.message);
+      }
+    }
+
+    function analyzeAccess() {
+      const groupCount = loadedGroups.length;
+      const recommendations = document.getElementById("recommendations");
+      let risk = "Low";
+
+      if (groupCount >= 20) {
+        risk = "High";
+      } else if (groupCount >= 10) {
+        risk = "Medium";
+      }
+
+      document.getElementById("riskLevel").innerText = risk;
+
+      recommendations.innerHTML = `
+        <div class="recommendation">
+          <strong>Risk Level:</strong> ${risk}<br><br>
+          <strong>Recommendation 1:</strong> Review group memberships regularly and remove stale access.<br>
+          <strong>Recommendation 2:</strong> Use least privilege access for admin-related groups.<br>
+          <strong>Recommendation 3:</strong> Use Microsoft Entra PIM for privileged role assignments.<br>
+          <strong>Recommendation 4:</strong> Run access reviews for users with many group memberships.<br>
+          <strong>Recommendation 5:</strong> Validate license usage and remove unused service plans.
+        </div>
+      `;
+
+      if (groupCount === 0) {
+        setStatus("Analysis completed. Load groups first for better recommendations.");
+      } else {
+        setStatus("Access analysis completed based on " + groupCount + " groups.");
+      }
+    }
+
     window.addEventListener("load", function () {
       document.getElementById("loginBtn").addEventListener("click", login);
       document.getElementById("profileBtn").addEventListener("click", getUserProfile);
+      document.getElementById("groupsBtn").addEventListener("click", getGroups);
+      document.getElementById("analyzeBtn").addEventListener("click", analyzeAccess);
       document.getElementById("logoutBtn").addEventListener("click", logout);
+
       initializeMsal();
     });
   </script>
