@@ -1,10 +1,847 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>AI Entra Assistant</title>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>AI-Entra-Assistant | Free Gemini AI Demo</title>
+
+  <!-- Microsoft Authentication Library -->
+  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script>
+    if (typeof msal === "undefined") {
+      document.write('<script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"><\/script>');
+    }
+  </script>
+
+  <style>
+    :root {
+      --bg: #0f172a;
+      --card: #1e293b;
+      --card2: #020617;
+      --border: #334155;
+      --text: #e5e7eb;
+      --muted: #94a3b8;
+      --accent: #38bdf8;
+      --success: #22c55e;
+      --danger: #f87171;
+      --warning: #facc15;
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      font-family: Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.6;
+    }
+
+    header {
+      text-align: center;
+      padding: 55px 20px;
+      background: linear-gradient(135deg, #1e3a8a, #0f172a);
+    }
+
+    header h1 {
+      font-size: 40px;
+      margin-bottom: 10px;
+    }
+
+    header p {
+      color: #cbd5e1;
+      font-size: 18px;
+    }
+
+    .container {
+      max-width: 1150px;
+      margin: auto;
+      padding: 30px 20px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 22px;
+      margin-bottom: 20px;
+    }
+
+    .grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+      gap: 18px;
+    }
+
+    button {
+      background: var(--accent);
+      color: #020617;
+      border: none;
+      padding: 12px 18px;
+      border-radius: 10px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 6px 6px 6px 0;
+    }
+
+    button.secondary {
+      background: #334155;
+      color: var(--text);
+    }
+
+    button.danger {
+      background: var(--danger);
+      color: #111827;
+    }
+
+    button.ai {
+      background: #a78bfa;
+      color: #111827;
+    }
+
+    button:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+    }
+
+    input, textarea {
+      width: 100%;
+      border-radius: 12px;
+      border: 1px solid var(--border);
+      padding: 14px;
+      font-size: 15px;
+      background: #020617;
+      color: var(--text);
+    }
+
+    textarea {
+      height: 95px;
+      resize: vertical;
+    }
+
+    pre {
+      background: var(--card2);
+      border: 1px solid var(--border);
+      color: #bae6fd;
+      padding: 16px;
+      border-radius: 12px;
+      white-space: pre-wrap;
+      overflow-x: auto;
+      min-height: 80px;
+    }
+
+    .status {
+      display: inline-block;
+      padding: 7px 12px;
+      border-radius: 999px;
+      background: #334155;
+      color: #e2e8f0;
+      font-size: 14px;
+    }
+
+    .status.good {
+      background: rgba(34, 197, 94, 0.15);
+      color: #86efac;
+      border: 1px solid rgba(34, 197, 94, 0.35);
+    }
+
+    .status.bad {
+      background: rgba(248, 113, 113, 0.15);
+      color: #fecaca;
+      border: 1px solid rgba(248, 113, 113, 0.35);
+    }
+
+    .status.warn {
+      background: rgba(250, 204, 21, 0.15);
+      color: #fde68a;
+      border: 1px solid rgba(250, 204, 21, 0.35);
+    }
+
+    .chips span {
+      display: inline-block;
+      background: #334155;
+      padding: 8px 12px;
+      border-radius: 999px;
+      margin: 5px 5px 5px 0;
+      cursor: pointer;
+      color: #e0f2fe;
+      font-size: 14px;
+    }
+
+    .small {
+      color: var(--muted);
+      font-size: 14px;
+    }
+
+    .warning {
+      color: var(--warning);
+    }
+
+    footer {
+      text-align: center;
+      padding: 25px;
+      color: var(--muted);
+      background: #020617;
+      margin-top: 30px;
+    }
+  </style>
 </head>
+
 <body>
-    <h1>AI Entra Assistant is Live</h1>
-    <p>Flask app running successfully on Render.</p>
+<header>
+  <h1>AI-Entra-Assistant</h1>
+  <p>Free Phase 1: MSAL + Microsoft Graph + Gemini AI</p>
+  <p><span id="loginStatus" class="status warn">Initializing MSAL...</span></p>
+</header>
+
+<div class="container">
+
+  <div class="card">
+    <h2>1. Configuration</h2>
+    <p class="small">Microsoft Entra App Registration is already configured below. Add your Gemini API key to enable real AI.</p>
+
+    <pre>
+clientId: "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def"
+tenantId: "1a9cfd22-fcc1-4a7c-80f0-5da5561da0e5"
+redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"</pre>
+
+    <label class="small">Gemini API Key</label>
+    <input id="geminiApiKey" type="password" placeholder="Paste Gemini API key here for browser demo" />
+    <button class="secondary" onclick="saveGeminiKey()">Save Gemini Key in Browser</button>
+    <button class="danger" onclick="clearGeminiKey()">Clear Gemini Key</button>
+
+    <p class="small warning">
+      Free demo note: this stores the key only in your browser localStorage. For production, use a backend proxy. Restrict the API key to Gemini API only.
+    </p>
+  </div>
+
+  <div class="card">
+    <h2>2. Microsoft Login</h2>
+    <button id="btnSignIn" onclick="signIn()" disabled>Sign in with Microsoft</button>
+    <button id="btnSignOut" class="danger" onclick="signOut()" disabled>Sign out</button>
+    <button id="btnProfile" class="secondary" onclick="getProfile()" disabled>Get My Profile</button>
+    <button id="btnTenant" class="secondary" onclick="getTenantInfo()" disabled>Get Tenant Info</button>
+    <pre id="profileOutput">MSAL is loading...</pre>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Users</h2>
+      <p class="small">Requires User.Read.All or Directory.Read.All.</p>
+      <button id="btnUsers" onclick="getUsers()" disabled>Get Users</button>
+      <pre id="usersOutput">Users will appear here.</pre>
+    </div>
+
+    <div class="card">
+      <h2>Groups</h2>
+      <p class="small">Requires Group.Read.All or Directory.Read.All.</p>
+      <button id="btnGroups" onclick="getGroups()" disabled>Get Groups</button>
+      <pre id="groupsOutput">Groups will appear here.</pre>
+    </div>
+
+    <div class="card">
+      <h2>Directory Roles</h2>
+      <p class="small">Requires RoleManagement.Read.Directory or Directory.Read.All.</p>
+      <button id="btnRoles" onclick="getDirectoryRoles()" disabled>Get Roles</button>
+      <pre id="rolesOutput">Roles will appear here.</pre>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>3. Real AI Assistant</h2>
+    <p class="small">
+      This section loads Microsoft Graph data first, then sends the actual tenant summary to Gemini for grounded AI analysis.
+    </p>
+
+    <div class="chips">
+      <span onclick="setPrompt('Analyze my Microsoft Entra tenant security posture')">Tenant Security Posture</span>
+      <span onclick="setPrompt('Review privileged roles and identity governance risks')">Privileged Role Review</span>
+      <span onclick="setPrompt('Generate executive identity security report')">Executive Report</span>
+      <span onclick="setPrompt('Give IAM improvement recommendations')">IAM Recommendations</span>
+    </div>
+
+    <textarea id="aiPrompt" placeholder="Example: Analyze my Microsoft Entra tenant security posture"></textarea>
+    <button class="ai" onclick="generateGeminiInsights()">Analyze with Gemini AI</button>
+    <pre id="aiOutput">Real Gemini AI response will appear here.</pre>
+  </div>
+
+  <div class="card">
+    <h2>Required Microsoft Graph API Permissions</h2>
+    <pre>
+Delegated Permissions:
+- User.Read
+- User.Read.All
+- Group.Read.All
+- Directory.Read.All
+- RoleManagement.Read.Directory
+
+Optional:
+- AuditLog.Read.All
+- Reports.Read.All</pre>
+  </div>
+
+</div>
+
+<footer>
+  Created by Santhosh Clement | AI + Microsoft Entra ID + Microsoft Graph Portfolio Demo
+</footer>
+
+<script>
+  /***********************************************************
+   * Microsoft Entra App Registration Details
+   ***********************************************************/
+  var tenantId = "1a9cfd22-fcc1-4a7c-80f0-5da5561da0e5";
+  var clientId = "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def";
+
+  var msalConfig = {
+    auth: {
+      clientId: clientId,
+      authority: "https://login.microsoftonline.com/" + tenantId,
+      redirectUri: "https://santhoshclement.github.io/AI-Entra-Assistant/"
+    },
+    cache: {
+      cacheLocation: "sessionStorage",
+      storeAuthStateInCookie: true
+    }
+  };
+
+  var loginRequest = {
+    scopes: [
+      "User.Read",
+      "User.Read.All",
+      "Group.Read.All",
+      "Directory.Read.All",
+      "RoleManagement.Read.Directory"
+    ],
+    prompt: "select_account"
+  };
+
+  var msalInstance = null;
+  var signedInAccount = null;
+  var latestUsers = [];
+  var latestGroups = [];
+  var latestRoles = [];
+  var latestTenantInfo = null;
+
+  function formatError(error) {
+    if (!error) return "Unknown error";
+    if (typeof error === "string") return error;
+
+    return JSON.stringify({
+      name: error.name,
+      message: error.message,
+      errorCode: error.errorCode,
+      errorMessage: error.errorMessage,
+      error: error.error,
+      errorDescription: error.error_description,
+      correlationId: error.correlationId,
+      statusCode: error.statusCode,
+      raw: error
+    }, null, 2);
+  }
+
+  function saveGeminiKey() {
+    var key = document.getElementById("geminiApiKey").value.trim();
+
+    if (!key) {
+      alert("Please paste your Gemini API key first.");
+      return;
+    }
+
+    localStorage.setItem("GEMINI_API_KEY", key);
+    document.getElementById("geminiApiKey").value = "";
+    alert("Gemini API key saved in this browser.");
+  }
+
+  function clearGeminiKey() {
+    localStorage.removeItem("GEMINI_API_KEY");
+    document.getElementById("geminiApiKey").value = "";
+    alert("Gemini API key cleared from this browser.");
+  }
+
+  function setButtonsEnabled(enabled) {
+    var ids = [
+      "btnSignIn",
+      "btnSignOut",
+      "btnProfile",
+      "btnTenant",
+      "btnUsers",
+      "btnGroups",
+      "btnRoles"
+    ];
+
+    ids.forEach(function(id) {
+      var btn = document.getElementById(id);
+      if (btn) btn.disabled = !enabled;
+    });
+  }
+
+  function updateStatus(state) {
+    var status = document.getElementById("loginStatus");
+
+    if (state === "signedIn") {
+      status.textContent = "Signed in";
+      status.className = "status good";
+    } else if (state === "ready") {
+      status.textContent = "MSAL ready - Not signed in";
+      status.className = "status bad";
+    } else if (state === "error") {
+      status.textContent = "MSAL error";
+      status.className = "status bad";
+    } else {
+      status.textContent = "Initializing MSAL...";
+      status.className = "status warn";
+    }
+  }
+
+  function initMsal() {
+    try {
+      if (typeof msal === "undefined") {
+        throw new Error("MSAL library did not load. Check CDN access.");
+      }
+
+      msalInstance = new msal.PublicClientApplication(msalConfig);
+
+      var accounts = msalInstance.getAllAccounts();
+
+      if (accounts.length > 0) {
+        signedInAccount = accounts[0];
+        msalInstance.setActiveAccount(signedInAccount);
+        updateStatus("signedIn");
+        document.getElementById("profileOutput").textContent =
+          "Existing session found:\n" + signedInAccount.username;
+      } else {
+        updateStatus("ready");
+        document.getElementById("profileOutput").textContent =
+          "MSAL loaded successfully. Click 'Sign in with Microsoft'.";
+      }
+
+      setButtonsEnabled(true);
+    } catch (error) {
+      updateStatus("error");
+      setButtonsEnabled(false);
+      document.getElementById("profileOutput").textContent =
+        "MSAL initialization failed:\n" + formatError(error);
+    }
+  }
+
+  function setPrompt(text) {
+    document.getElementById("aiPrompt").value = text;
+  }
+
+  async function signIn() {
+    try {
+      if (!msalInstance) initMsal();
+      if (!msalInstance) throw new Error("MSAL is not initialized.");
+
+      var response = await msalInstance.loginPopup(loginRequest);
+      signedInAccount = response.account;
+      msalInstance.setActiveAccount(response.account);
+      updateStatus("signedIn");
+
+      document.getElementById("profileOutput").textContent =
+        "Signed in successfully:\n" + response.account.username;
+    } catch (error) {
+      document.getElementById("profileOutput").textContent =
+        "Login failed:\n" + formatError(error);
+    }
+  }
+
+  async function signOut() {
+    try {
+      if (!msalInstance) throw new Error("MSAL is not initialized.");
+
+      var account = msalInstance.getActiveAccount();
+
+      if (account) {
+        await msalInstance.logoutPopup({ account: account });
+      }
+
+      signedInAccount = null;
+      latestUsers = [];
+      latestGroups = [];
+      latestRoles = [];
+      latestTenantInfo = null;
+      updateStatus("ready");
+
+      document.getElementById("profileOutput").textContent = "Signed out.";
+      document.getElementById("usersOutput").textContent = "Users will appear here.";
+      document.getElementById("groupsOutput").textContent = "Groups will appear here.";
+      document.getElementById("rolesOutput").textContent = "Roles will appear here.";
+      document.getElementById("aiOutput").textContent = "Real Gemini AI response will appear here.";
+    } catch (error) {
+      document.getElementById("profileOutput").textContent =
+        "Sign out failed:\n" + formatError(error);
+    }
+  }
+
+  async function getAccessToken() {
+    if (!msalInstance) initMsal();
+    if (!msalInstance) throw new Error("MSAL is not initialized.");
+
+    var account = msalInstance.getActiveAccount();
+
+    if (!account) {
+      var accounts = msalInstance.getAllAccounts();
+      if (accounts.length > 0) {
+        account = accounts[0];
+        msalInstance.setActiveAccount(account);
+      }
+    }
+
+    if (!account) {
+      throw new Error("Please sign in first.");
+    }
+
+    try {
+      var tokenResponse = await msalInstance.acquireTokenSilent({
+        scopes: loginRequest.scopes,
+        account: account
+      });
+
+      return tokenResponse.accessToken;
+    } catch (error) {
+      var popupResponse = await msalInstance.acquireTokenPopup({
+        scopes: loginRequest.scopes
+      });
+
+      return popupResponse.accessToken;
+    }
+  }
+
+  async function callGraph(endpoint) {
+    var accessToken = await getAccessToken();
+
+    var response = await fetch(endpoint, {
+      headers: {
+        Authorization: "Bearer " + accessToken
+      }
+    });
+
+    var data = await response.json();
+
+    if (!response.ok) throw data;
+
+    return data;
+  }
+
+  async function getProfile() {
+    try {
+      var data = await callGraph("https://graph.microsoft.com/v1.0/me");
+
+      document.getElementById("profileOutput").textContent =
+        JSON.stringify(data, null, 2);
+    } catch (error) {
+      document.getElementById("profileOutput").textContent =
+        "Graph profile call failed:\n" + formatError(error);
+    }
+  }
+
+  async function getTenantInfo() {
+    try {
+      var data = await callGraph("https://graph.microsoft.com/v1.0/organization");
+
+      latestTenantInfo = data.value ? data.value[0] : data;
+
+      document.getElementById("profileOutput").textContent =
+        JSON.stringify(data, null, 2);
+    } catch (error) {
+      document.getElementById("profileOutput").textContent =
+        "Tenant info call failed:\n" + formatError(error);
+    }
+  }
+
+  async function getUsers() {
+    try {
+      var data = await callGraph(
+        "https://graph.microsoft.com/v1.0/users?$select=displayName,userPrincipalName,accountEnabled,userType&$top=25"
+      );
+
+      latestUsers = data.value || [];
+
+      document.getElementById("usersOutput").textContent =
+        JSON.stringify(latestUsers, null, 2);
+    } catch (error) {
+      document.getElementById("usersOutput").textContent =
+        "Users call failed:\n" + formatError(error);
+    }
+  }
+
+  async function getGroups() {
+    try {
+      var data = await callGraph(
+        "https://graph.microsoft.com/v1.0/groups?$select=displayName,mail,securityEnabled,groupTypes&$top=25"
+      );
+
+      latestGroups = data.value || [];
+
+      document.getElementById("groupsOutput").textContent =
+        JSON.stringify(latestGroups, null, 2);
+    } catch (error) {
+      document.getElementById("groupsOutput").textContent =
+        "Groups call failed:\n" + formatError(error);
+    }
+  }
+
+  async function getDirectoryRoles() {
+    try {
+      var data = await callGraph(
+        "https://graph.microsoft.com/v1.0/directoryRoles"
+      );
+
+      latestRoles = data.value || [];
+
+      document.getElementById("rolesOutput").textContent =
+        JSON.stringify(latestRoles, null, 2);
+    } catch (error) {
+      document.getElementById("rolesOutput").textContent =
+        "Roles call failed:\n" + formatError(error);
+    }
+  }
+
+  function buildTenantSummary() {
+    var guestUsers = latestUsers.filter(function(user) {
+      return user.userType === "Guest";
+    });
+
+    var disabledUsers = latestUsers.filter(function(user) {
+      return user.accountEnabled === false;
+    });
+
+    return {
+      tenant: latestTenantInfo ? {
+        displayName: latestTenantInfo.displayName,
+        tenantType: latestTenantInfo.tenantType,
+        countryLetterCode: latestTenantInfo.countryLetterCode,
+        verifiedDomains: latestTenantInfo.verifiedDomains
+      } : "Tenant info not loaded",
+      userSummary: {
+        loadedUsers: latestUsers.length,
+        guestUsersLoaded: guestUsers.length,
+        disabledUsersLoaded: disabledUsers.length
+      },
+      groupSummary: {
+        loadedGroups: latestGroups.length,
+        securityEnabledGroupsLoaded: latestGroups.filter(function(g) { return g.securityEnabled; }).length
+      },
+      roleSummary: {
+        loadedDirectoryRoles: latestRoles.length,
+        roles: latestRoles.map(function(role) {
+          return {
+            displayName: role.displayName,
+            description: role.description
+          };
+        })
+      },
+      sampleUsers: latestUsers.map(function(user) {
+        return {
+          displayName: user.displayName,
+          userPrincipalName: user.userPrincipalName,
+          accountEnabled: user.accountEnabled,
+          userType: user.userType
+        };
+      }),
+      sampleGroups: latestGroups.map(function(group) {
+        return {
+          displayName: group.displayName,
+          mail: group.mail,
+          securityEnabled: group.securityEnabled,
+          groupTypes: group.groupTypes
+        };
+      })
+    };
+  }
+
+  async function loadGraphDataIfMissing() {
+    var loadingNotes = [];
+
+    if (!latestTenantInfo) {
+      loadingNotes.push("Loading tenant info...");
+      await getTenantInfo();
+    }
+
+    if (!latestUsers || latestUsers.length === 0) {
+      loadingNotes.push("Loading users...");
+      await getUsers();
+    }
+
+    if (!latestGroups || latestGroups.length === 0) {
+      loadingNotes.push("Loading groups...");
+      await getGroups();
+    }
+
+    if (!latestRoles || latestRoles.length === 0) {
+      loadingNotes.push("Loading directory roles...");
+      await getDirectoryRoles();
+    }
+
+    return loadingNotes;
+  }
+
+  function getSelectedAnalysisType(userPrompt) {
+    var p = (userPrompt || "").toLowerCase();
+
+    if (p.includes("privileged") || p.includes("role")) {
+      return "PRIVILEGED_ROLE_REVIEW";
+    }
+
+    if (p.includes("executive")) {
+      return "EXECUTIVE_REPORT";
+    }
+
+    if (p.includes("recommendation") || p.includes("iam")) {
+      return "IAM_RECOMMENDATIONS";
+    }
+
+    return "TENANT_SECURITY_POSTURE";
+  }
+
+  async function generateGeminiInsights() {
+    var apiKey = localStorage.getItem("GEMINI_API_KEY");
+    var userPrompt = document.getElementById("aiPrompt").value.trim();
+
+    if (!apiKey) {
+      document.getElementById("aiOutput").textContent =
+        "Gemini API key is missing. Paste your key in the Configuration section and click Save Gemini Key.";
+      return;
+    }
+
+    if (!userPrompt) {
+      userPrompt = "Analyze my Microsoft Entra tenant security posture.";
+    }
+
+    document.getElementById("aiOutput").textContent =
+      "Collecting Microsoft Graph data before AI analysis...";
+
+    try {
+      await loadGraphDataIfMissing();
+    } catch (graphError) {
+      document.getElementById("aiOutput").textContent =
+        "Unable to load Microsoft Graph data before AI analysis:\n" + formatError(graphError);
+      return;
+    }
+
+    var tenantSummary = buildTenantSummary();
+    var analysisType = getSelectedAnalysisType(userPrompt);
+
+    var fullPrompt =
+`You are a Microsoft Entra ID, IAM, and cloud security architect.
+
+You MUST analyze ONLY the Microsoft Graph data provided below.
+Do NOT invent tenant facts.
+Do NOT create fake dates.
+Do NOT create fake prepared-by names.
+Do NOT say MFA, Conditional Access, PIM, sign-in risk, inactive users, or licenses are enabled unless that exact data is provided.
+If data is missing, clearly say "Not available in loaded Graph data".
+
+Analysis type requested:
+${analysisType}
+
+User request:
+${userPrompt}
+
+Loaded Microsoft Graph data:
+${JSON.stringify(tenantSummary, null, 2)}
+
+Your response must follow this exact structure:
+
+# AI-Entra-Assistant Graph-Based Analysis
+
+## 1. Data Used
+Show:
+- Tenant name if available
+- Number of loaded users
+- Number of loaded guest users
+- Number of loaded disabled users
+- Number of loaded groups
+- Number of loaded security groups
+- Number of loaded directory roles
+
+## 2. What I Can Confirm From The Loaded Data
+List only facts visible in the provided JSON.
+
+## 3. Risks Observed From Loaded Data
+Use only the provided users, groups, and roles.
+If risk cannot be verified, say "Not available in loaded Graph data".
+
+## 4. Recommendations
+Give practical Microsoft Entra ID recommendations.
+Clearly separate:
+- Evidence-based recommendations
+- General best-practice recommendations
+
+## 5. Portfolio Summary
+Write 2-3 lines explaining what this project demonstrates technically.
+
+Important:
+Keep the response professional, concise, and directly tied to the Graph data.`;
+
+    document.getElementById("aiOutput").textContent =
+      "Sending loaded Microsoft Graph data to Gemini AI...\n\n" +
+      "Users loaded: " + latestUsers.length + "\n" +
+      "Groups loaded: " + latestGroups.length + "\n" +
+      "Directory roles loaded: " + latestRoles.length;
+
+    try {
+      var response = await fetch(
+        // Current Gemini model. If needed, replace gemini-2.5-flash with another available model from Google AI Studio.
+        "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + encodeURIComponent(apiKey),
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({
+            contents: [
+              {
+                parts: [
+                  {
+                    text: fullPrompt
+                  }
+                ]
+              }
+            ],
+            generationConfig: {
+              temperature: 0.1,
+              maxOutputTokens: 1400
+            }
+          })
+        }
+      );
+
+      var data = await response.json();
+
+      if (!response.ok) {
+        throw data;
+      }
+
+      var aiText =
+        data &&
+        data.candidates &&
+        data.candidates[0] &&
+        data.candidates[0].content &&
+        data.candidates[0].content.parts &&
+        data.candidates[0].content.parts[0] &&
+        data.candidates[0].content.parts[0].text;
+
+      document.getElementById("aiOutput").textContent =
+        aiText || JSON.stringify(data, null, 2);
+    } catch (error) {
+      document.getElementById("aiOutput").textContent =
+        "Gemini AI call failed:\n" + formatError(error);
+    }
+  }
+
+  window.addEventListener("load", function() {
+    setButtonsEnabled(false);
+    updateStatus("initializing");
+    initMsal();
+
+    if (localStorage.getItem("GEMINI_API_KEY")) {
+      document.getElementById("geminiApiKey").placeholder = "Gemini key already saved in this browser";
+    }
+  });
+</script>
+
 </body>
 </html>
