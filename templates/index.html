@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Entra Assistant</title>
 
-  <script defer src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <!-- MSAL Browser from jsDelivr CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/@azure/msal-browser@2.38.3/lib/msal-browser.min.js"></script>
 
   <style>
     body {
@@ -18,7 +19,6 @@
       align-items: center;
       justify-content: center;
     }
-
     .container {
       width: 90%;
       max-width: 850px;
@@ -29,32 +29,20 @@
       box-shadow: 0 20px 50px rgba(0,0,0,0.35);
       text-align: center;
     }
-
-    h1 {
-      font-size: 42px;
-      margin-bottom: 10px;
-    }
-
-    .subtitle {
-      color: #dbeafe;
-      font-size: 18px;
-      margin-bottom: 30px;
-    }
-
+    h1 { font-size: 42px; margin-bottom: 10px; }
+    .subtitle { color: #dbeafe; font-size: 18px; margin-bottom: 30px; }
     .features {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 15px;
       margin: 30px 0;
     }
-
     .feature {
       background: rgba(255,255,255,0.12);
       padding: 18px;
       border-radius: 14px;
       border: 1px solid rgba(255,255,255,0.16);
     }
-
     button {
       background: #38bdf8;
       color: #082f49;
@@ -66,17 +54,11 @@
       font-weight: bold;
       margin: 8px;
     }
-
     button:disabled {
       opacity: 0.5;
       cursor: not-allowed;
     }
-
-    .logout {
-      background: #f87171;
-      color: #ffffff;
-    }
-
+    .logout { background: #f87171; color: #ffffff; }
     .status {
       margin-top: 25px;
       background: rgba(0,0,0,0.25);
@@ -85,11 +67,7 @@
       font-size: 14px;
       word-break: break-word;
     }
-
-    .hidden {
-      display: none;
-    }
-
+    .hidden { display: none; }
     .user-card {
       margin-top: 25px;
       background: rgba(255,255,255,0.15);
@@ -131,7 +109,7 @@
     <div class="status" id="statusBox">Status: Loading MSAL...</div>
   </div>
 
-  <script defer>
+  <script>
     const msalConfig = {
       auth: {
         clientId: "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def",
@@ -144,14 +122,8 @@
       }
     };
 
-    const loginRequest = {
-      scopes: ["User.Read"]
-    };
-
-    const tokenRequest = {
-      scopes: ["User.Read"]
-    };
-
+    const loginRequest = { scopes: ["User.Read"] };
+    const tokenRequest = { scopes: ["User.Read"] };
     let msalInstance = null;
 
     function setStatus(message) {
@@ -167,7 +139,6 @@
     function showSignedInState(account) {
       document.getElementById("loginSection").classList.add("hidden");
       document.getElementById("userSection").classList.remove("hidden");
-
       document.getElementById("displayName").innerText = account.name || "-";
       document.getElementById("email").innerText = account.username || "-";
       document.getElementById("tenantId").innerText = account.tenantId || "-";
@@ -179,30 +150,14 @@
       enableLoginButton();
     }
 
-    async function waitForMsalLibrary() {
-      for (let i = 0; i < 50; i++) {
-        if (window.msal && window.msal.PublicClientApplication) {
-          return true;
-        }
-        await new Promise(resolve => setTimeout(resolve, 100));
-      }
-      return false;
-    }
-
     async function initializeMsal() {
       try {
-        const msalLoaded = await waitForMsalLibrary();
-
-        if (!msalLoaded) {
-          setStatus("MSAL library failed to load. Check internet/CDN access.");
+        if (!window.msal || !window.msal.PublicClientApplication) {
+          setStatus("MSAL library not found. Open DevTools > Network and check if msal-browser.min.js is blocked.");
           return;
         }
 
         msalInstance = new msal.PublicClientApplication(msalConfig);
-
-        if (typeof msalInstance.initialize === "function") {
-          await msalInstance.initialize();
-        }
 
         const response = await msalInstance.handleRedirectPromise();
 
@@ -236,7 +191,6 @@
           setStatus("MSAL is not initialized. Refresh the page.");
           return;
         }
-
         setStatus("Redirecting to Microsoft login...");
         await msalInstance.loginRedirect(loginRequest);
       } catch (error) {
@@ -248,7 +202,6 @@
     async function logout() {
       try {
         const account = msalInstance.getActiveAccount();
-
         await msalInstance.logoutRedirect({
           account: account,
           postLogoutRedirectUri: window.location.origin
@@ -272,7 +225,6 @@
           ...tokenRequest,
           account: account
         });
-
         return response.accessToken;
       } catch (error) {
         console.warn(error);
@@ -284,15 +236,11 @@
     async function getUserProfile() {
       try {
         setStatus("Getting Microsoft Graph profile...");
-
         const accessToken = await getAccessToken();
-
         if (!accessToken) return;
 
         const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
-          headers: {
-            Authorization: "Bearer " + accessToken
-          }
+          headers: { Authorization: "Bearer " + accessToken }
         });
 
         const profile = await graphResponse.json();
@@ -304,7 +252,6 @@
 
         document.getElementById("displayName").innerText = profile.displayName || "-";
         document.getElementById("email").innerText = profile.userPrincipalName || profile.mail || "-";
-
         setStatus("Profile loaded successfully");
       } catch (error) {
         console.error(error);
@@ -316,7 +263,6 @@
       document.getElementById("loginBtn").addEventListener("click", login);
       document.getElementById("profileBtn").addEventListener("click", getUserProfile);
       document.getElementById("logoutBtn").addEventListener("click", logout);
-
       initializeMsal();
     });
   </script>
