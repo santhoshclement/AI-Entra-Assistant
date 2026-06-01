@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>AI Entra Assistant</title>
 
-  <script src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
+  <script defer src="https://alcdn.msauth.net/browser/2.38.3/js/msal-browser.min.js"></script>
 
   <style>
     body {
@@ -18,6 +18,7 @@
       align-items: center;
       justify-content: center;
     }
+
     .container {
       width: 90%;
       max-width: 850px;
@@ -28,20 +29,32 @@
       box-shadow: 0 20px 50px rgba(0,0,0,0.35);
       text-align: center;
     }
-    h1 { font-size: 42px; margin-bottom: 10px; }
-    .subtitle { color: #dbeafe; font-size: 18px; margin-bottom: 30px; }
+
+    h1 {
+      font-size: 42px;
+      margin-bottom: 10px;
+    }
+
+    .subtitle {
+      color: #dbeafe;
+      font-size: 18px;
+      margin-bottom: 30px;
+    }
+
     .features {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
       gap: 15px;
       margin: 30px 0;
     }
+
     .feature {
       background: rgba(255,255,255,0.12);
       padding: 18px;
       border-radius: 14px;
       border: 1px solid rgba(255,255,255,0.16);
     }
+
     button {
       background: #38bdf8;
       color: #082f49;
@@ -53,8 +66,17 @@
       font-weight: bold;
       margin: 8px;
     }
-    button:hover { background: #7dd3fc; }
-    .logout { background: #f87171; color: #ffffff; }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: not-allowed;
+    }
+
+    .logout {
+      background: #f87171;
+      color: #ffffff;
+    }
+
     .status {
       margin-top: 25px;
       background: rgba(0,0,0,0.25);
@@ -63,7 +85,11 @@
       font-size: 14px;
       word-break: break-word;
     }
-    .hidden { display: none; }
+
+    .hidden {
+      display: none;
+    }
+
     .user-card {
       margin-top: 25px;
       background: rgba(255,255,255,0.15);
@@ -71,7 +97,6 @@
       padding: 20px;
       text-align: left;
     }
-    .note { color: #bfdbfe; font-size: 13px; margin-top: 25px; }
   </style>
 </head>
 
@@ -88,7 +113,7 @@
     </div>
 
     <div id="loginSection">
-      <button id="loginBtn" type="button">Login with Microsoft</button>
+      <button id="loginBtn" type="button" disabled>Loading MSAL...</button>
     </div>
 
     <div id="userSection" class="hidden">
@@ -103,12 +128,10 @@
       </div>
     </div>
 
-    <div class="status" id="statusBox">Status: Loading...</div>
-
-    <p class="note">Redirect login is used to avoid MSAL popup errors.</p>
+    <div class="status" id="statusBox">Status: Loading MSAL...</div>
   </div>
 
-  <script>
+  <script defer>
     const msalConfig = {
       auth: {
         clientId: "f60d2ebc-7bc6-4943-a711-ccd5cf4d2def",
@@ -117,23 +140,34 @@
       },
       cache: {
         cacheLocation: "sessionStorage",
-        storeAuthStateInCookie: false
+        storeAuthStateInCookie: true
       }
     };
 
-    const loginRequest = { scopes: ["User.Read"] };
-    const tokenRequest = { scopes: ["User.Read"] };
+    const loginRequest = {
+      scopes: ["User.Read"]
+    };
+
+    const tokenRequest = {
+      scopes: ["User.Read"]
+    };
 
     let msalInstance = null;
-    let msalReady = false;
 
     function setStatus(message) {
       document.getElementById("statusBox").innerText = "Status: " + message;
     }
 
+    function enableLoginButton() {
+      const btn = document.getElementById("loginBtn");
+      btn.disabled = false;
+      btn.innerText = "Login with Microsoft";
+    }
+
     function showSignedInState(account) {
       document.getElementById("loginSection").classList.add("hidden");
       document.getElementById("userSection").classList.remove("hidden");
+
       document.getElementById("displayName").innerText = account.name || "-";
       document.getElementById("email").innerText = account.username || "-";
       document.getElementById("tenantId").innerText = account.tenantId || "-";
@@ -142,10 +176,28 @@
     function showSignedOutState() {
       document.getElementById("loginSection").classList.remove("hidden");
       document.getElementById("userSection").classList.add("hidden");
+      enableLoginButton();
+    }
+
+    async function waitForMsalLibrary() {
+      for (let i = 0; i < 50; i++) {
+        if (window.msal && window.msal.PublicClientApplication) {
+          return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return false;
     }
 
     async function initializeMsal() {
       try {
+        const msalLoaded = await waitForMsalLibrary();
+
+        if (!msalLoaded) {
+          setStatus("MSAL library failed to load. Check internet/CDN access.");
+          return;
+        }
+
         msalInstance = new msal.PublicClientApplication(msalConfig);
 
         if (typeof msalInstance.initialize === "function") {
@@ -153,7 +205,6 @@
         }
 
         const response = await msalInstance.handleRedirectPromise();
-        msalReady = true;
 
         if (response && response.account) {
           msalInstance.setActiveAccount(response.account);
@@ -174,14 +225,15 @@
         }
       } catch (error) {
         console.error(error);
+        enableLoginButton();
         setStatus("MSAL initialization failed: " + error.message);
       }
     }
 
     async function login() {
       try {
-        if (!msalReady || !msalInstance) {
-          setStatus("MSAL is still loading. Please wait a few seconds and try again.");
+        if (!msalInstance) {
+          setStatus("MSAL is not initialized. Refresh the page.");
           return;
         }
 
@@ -195,11 +247,6 @@
 
     async function logout() {
       try {
-        if (!msalReady || !msalInstance) {
-          setStatus("MSAL is not ready.");
-          return;
-        }
-
         const account = msalInstance.getActiveAccount();
 
         await msalInstance.logoutRedirect({
@@ -228,7 +275,7 @@
 
         return response.accessToken;
       } catch (error) {
-        console.warn("Silent token failed, redirecting for token", error);
+        console.warn(error);
         await msalInstance.acquireTokenRedirect(tokenRequest);
         return null;
       }
@@ -236,11 +283,6 @@
 
     async function getUserProfile() {
       try {
-        if (!msalReady || !msalInstance) {
-          setStatus("MSAL is not ready.");
-          return;
-        }
-
         setStatus("Getting Microsoft Graph profile...");
 
         const accessToken = await getAccessToken();
@@ -248,7 +290,9 @@
         if (!accessToken) return;
 
         const graphResponse = await fetch("https://graph.microsoft.com/v1.0/me", {
-          headers: { Authorization: "Bearer " + accessToken }
+          headers: {
+            Authorization: "Bearer " + accessToken
+          }
         });
 
         const profile = await graphResponse.json();
@@ -268,7 +312,7 @@
       }
     }
 
-    document.addEventListener("DOMContentLoaded", function () {
+    window.addEventListener("load", function () {
       document.getElementById("loginBtn").addEventListener("click", login);
       document.getElementById("profileBtn").addEventListener("click", getUserProfile);
       document.getElementById("logoutBtn").addEventListener("click", logout);
